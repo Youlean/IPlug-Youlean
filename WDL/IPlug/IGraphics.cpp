@@ -1173,31 +1173,47 @@ bool IGraphics::Draw(IRECT* pR)
 		}
 		else
 		{
-			for (i = 1; i < n; ++i)   // loop through all controls starting from one (not bg)
+			// First we will mark all controls dirty that are intersecting and then we will redraw it. 
+			for (i = (n - 1); i > 0; i--)   // Loop through all controls (not background)
 			{
-				IControl* pControl = mControls.Get(i); // assign control i to pControl
-				if (pControl->IsDirty())   // if pControl is dirty
+				IControl* pControl = mControls.Get(i); // Assign control i to pControl
+				if (pControl->IsDirty())  
 				{
+					mDrawRECT = *(pControl->GetRECT()); // Put the rect in the mDrawRect member variable
 
-					// printf("control %i is Dirty\n", i);
-
-					mDrawRECT = *(pControl->GetRECT()); // put the rect in the mDrawRect member variable
-					for (j = 0; j < n; ++j)   // loop through all controls
+					// Find if mDrawRECT intersect with any visible control and set that control to dirty
+					for (j = (i - 1); j >= 0; j--)   // Loop through all controls
 					{
-						IControl* pControl2 = mControls.Get(j); // assign control j to pControl2
+						IControl* pControl2 = mControls.Get(j); // Assign control j to pControl2
 
-																// if control1 == control2 OR control2 is not hidden AND control2's rect intersects mDrawRect
-						if (!pControl2->IsHidden() && (i == j || pControl2->GetRECT()->Intersects(&mDrawRECT)))
-						{
-							//if ((i == j) && (!pControl2->IsHidden())|| (!(pControl2->IsHidden()) && pControl2->GetRECT()->Intersects(&mDrawRECT))) {
-							//printf("control %i and %i \n", i, j);
-
-							pControl2->Draw(this);
-						}
+						// If pControl2 is not hidden AND pControl2's rect intersects mDrawRect set pControl2 dirty
+						if (!pControl2->IsHidden() && pControl2->GetRECT()->Intersects(&mDrawRECT)) pControl2->SetDirty(true);
 					}
+				}
+			}
+
+			// Now draw everything dirty
+			for (int j = 0; j < n; j++)
+			{
+				IControl* pControl = mControls.Get(j);
+				if (pControl->IsDirty() && !pControl->IsHidden())
+				{
+					pControl->Draw(this);
 					pControl->SetClean();
 				}
 			}
+
+			// Now draw everything dirty
+			for (int j = 0; j < n; j++)
+			{
+				IControl* pControl = mControls.Get(j);
+				if (pControl->IsDirty() && !pControl->IsHidden())
+				{
+					
+				}
+			}
+
+			DrawScreen(&IRECT(0,0,Width(), Height()));
 		}
 	}
 
@@ -1229,7 +1245,7 @@ bool IGraphics::Draw(IRECT* pR)
 			&liveToogleEditing, &liveMouseCapture, &liveMouseDragging, &liveMode, &mMouseX, &mMouseY, Width(), Height(), guiScaleRatio);
 	}
 
-	return DrawScreen(pR);
+	return true;
 }
 
 void IGraphics::SetStrictDrawing(bool strict)
