@@ -182,6 +182,7 @@ public:
 	void SetControlFromPlug(int controlIdx, double normalizedValue);
 
 	void SetAllControlsDirty();
+	void MarkAllIntersectingControlsDirty();
 
 	// This is for when the gui needs to change a control value that it can't redraw
 	// for context reasons.  If the gui has redrawn the control, use IPlug::SetParameterFromGUI.
@@ -195,6 +196,7 @@ public:
 	bool DrawVerticalLine(const IColor* pColor, int xi, int yLo, int yHi);
 	bool DrawHorizontalLine(const IColor* pColor, int yi, int xLo, int xHi);
 	bool DrawRadialLine(const IColor* pColor, float cx, float cy, float angle, float rMin, float rMax, const IChannelBlend* pBlend = 0, bool antiAlias = false);
+
 
 	void OnMouseDown(int x, int y, IMouseMod* pMod);
 	void OnMouseUp(int x, int y, IMouseMod* pMod);
