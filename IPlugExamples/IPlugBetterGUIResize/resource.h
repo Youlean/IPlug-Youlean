@@ -23,7 +23,7 @@
 // 4 chars, single quotes. At least one capital letter
 #define PLUG_UNIQUE_ID 'Ipef'
 // make sure this is not the same as BUNDLE_MFR
-#define PLUG_MFR_ID 'Acme'
+#define PLUG_MFR_ID 'Yyyy'
 
 // ProTools stuff
 
@@ -51,7 +51,8 @@ instrument determined by PLUG _IS _INST
 // if this is 0 RTAS can't get tempo info
 #define PLUG_DOES_MIDI 0
 
-#define PLUG_DOES_STATE_CHUNKS 0
+// GUI resize needs chunks to save window size
+#define PLUG_DOES_STATE_CHUNKS 1
 
 // Unique IDs for each image resource.
 #define KNOB_ID 102
@@ -73,7 +74,7 @@ instrument determined by PLUG _IS _INST
 #endif
 
 // vst3 stuff
-#define MFR_URL "www.olilarkin.co.uk"
+#define MFR_URL "www.github.com/Youlean"
 #define MFR_EMAIL "spam@me.com"
 #define EFFECT_TYPE_VST3 "Fx"
 
