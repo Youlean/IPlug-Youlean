@@ -11,7 +11,7 @@
     <DEBUG_DEFS>_DEBUG;</DEBUG_DEFS>
     <RELEASE_DEFS>NDEBUG;</RELEASE_DEFS>
     <TRACER_DEFS>TRACER_BUILD;NDEBUG;</TRACER_DEFS>
-    <ADDITIONAL_INCLUDES>$(ProjectDir)\..\..\..\MyDSP\;..\..\YCAIRO\;..\..\YCAIRO\Cairo_Graphics\cairo\src\;..\..\YCAIRO\Cairo_Graphics\freetype\include\;..\..\YCAIRO\Cairo_Graphics\projects\cairo\src\;</ADDITIONAL_INCLUDES>
+    <ADDITIONAL_INCLUDES>$(ProjectDir)\..\..\..\MyDSP\;..\..\YCAIRO\;</ADDITIONAL_INCLUDES>
     <APP_INCLUDES>..\..\ASIO_SDK;..\..\WDL\rtaudiomidi;</APP_INCLUDES>
     <APP_LIBS>dsound.lib;winmm.lib;</APP_LIBS>
     <VST3_INCLUDES>..\..\VST3_SDK;</VST3_INCLUDES>
@@ -25,13 +25,15 @@
   <PropertyGroup>
     <TargetName>$(BINARY_NAME)</TargetName>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+	<VcpkgTriplet Condition="'$(Platform)'=='Win32'">x86-windows-static</VcpkgTriplet>
+    <VcpkgTriplet Condition="'$(Platform)'=='x64'">x64-windows-static</VcpkgTriplet>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(ADDITIONAL_INCLUDES);..\..\WDL;..\..\WDL\lice;..\..\WDL\IPlug</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>IPlug.lib;lice.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>IPlug.lib;lice.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

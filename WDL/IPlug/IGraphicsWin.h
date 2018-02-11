@@ -7,6 +7,8 @@
 #include <windowsx.h>
 #include <winuser.h>
 #include "UTF_Helper.h"
+#include <cairo.h>
+
 class IGraphicsWin : public IGraphics, Windows_UTF_Converter
 {
 public:
@@ -72,6 +74,7 @@ protected:
   void HideTooltip();
 
 private:
+	double animation = 0;
   HINSTANCE mHInstance;
   HWND mPlugWnd, mParamEditWnd, mTooltipWnd;
   // Ed = being edited manually.

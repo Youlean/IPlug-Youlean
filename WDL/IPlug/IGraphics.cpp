@@ -1173,6 +1173,10 @@ bool IGraphics::Draw(IRECT* pR)
 	//  #pragma REMINDER("Mutex set while drawing")
 	//  WDL_MutexLock lock(&mMutex);
 
+	return DrawScreen(pR);
+
+
+
 
 	// If GUIResize is actuve and fast bitmap resizing is active, draw overlay image on the plugin while resizing
 	if (mPlug->GetGUIResize() && mPlug->GetGUIResize()->CurrentlyFastResizing())
