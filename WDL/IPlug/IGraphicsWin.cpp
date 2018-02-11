@@ -4,6 +4,8 @@
 #include <wininet.h>
 #include <Shlobj.h>
 #include <commctrl.h>
+#include <cairo.h>
+#include <cairo-gl.h>
 
 #ifdef RTAS_API
   #include "PlugInUtils.h"
@@ -16,6 +18,27 @@
 static int nWndClassReg = 0;
 static const char* wndClassName = "IPlugWndClass";
 static double sFPS = 0.0;
+
+
+std::string GetLastErrorAsString()
+{
+	//Get the error message, if any.
+	DWORD errorMessageID = ::GetLastError();
+	if (errorMessageID == 0)
+		return std::string(); //No error message has been recorded
+
+	LPSTR messageBuffer = nullptr;
+	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+	std::string message(messageBuffer, size);
+
+	//Free the buffer.
+	LocalFree(messageBuffer);
+
+	return message;
+}
+
 
 #define PARAM_EDIT_ID 99
 
@@ -47,11 +70,84 @@ inline IMouseMod GetMouseMod(WPARAM wParam)
                    );
 }
 
+std::string cairo_error(cairo_t *cr)
+{
+	cairo_status_t status = cairo_status(cr);
+	return cairo_status_to_string(status);
+}
+
 // static
 LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
   if (msg == WM_CREATE)
   {
+	  HDC hDC = GetDC(hWnd);
+
+	  // Choose pixelformat
+	  PIXELFORMATDESCRIPTOR pfd;
+	  ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+	  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+	  pfd.nVersion = 1;
+	  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	  pfd.iPixelType = PFD_TYPE_RGBA;
+	  pfd.cColorBits = 32;
+	  pfd.cDepthBits = 16;
+	  pfd.iLayerType = PFD_MAIN_PLANE;
+	  
+	  int pixelFormat = ChoosePixelFormat(hDC, &pfd);
+
+	  SetPixelFormat(hDC, pixelFormat, NULL);
+
+	  HGLRC	hRC = wglCreateContext(hDC);
+
+	  std::string e1 = GetLastErrorAsString();
+	  wglMakeCurrent(hDC, hRC);
+
+
+	  // Test openGL
+	  cairo_surface_t *surface_gl;
+	  cairo_t *cr_gl;
+	  cairo_device_t *cairo_device = cairo_wgl_device_create(hRC);
+
+	  surface_gl = cairo_gl_surface_create_for_dc(cairo_device, hDC, 500, 500);
+	  cr_gl = cairo_create(surface_gl);
+
+	  std::string ec = cairo_error(cr_gl);
+
+	  cairo_set_source_rgb(cr_gl, 1, 1, 1);
+	  cairo_paint(cr_gl);
+
+	  double x = 25.6, y = 128.0;
+	  double x1 = 102.4, y1 = 230.4,
+		  x2 = 153.6, y2 = 25.6,
+		  x3 = 230.4, y3 = 128.0;
+
+	  cairo_set_source_rgb(cr_gl, 0, 0, 0);
+	  cairo_move_to(cr_gl, x, y);
+	  cairo_curve_to(cr_gl, x1, y1, x2, y2, x3, y3);
+
+	  cairo_set_line_width(cr_gl, 10.0);
+	  cairo_stroke(cr_gl);
+
+	  cairo_set_source_rgba(cr_gl, 1, 0.2, 0.2, 0.6);
+	  cairo_set_line_width(cr_gl, 6.0);
+	  cairo_move_to(cr_gl, x, y);   cairo_line_to(cr_gl, x1, y1);
+	  cairo_move_to(cr_gl, x2, y2); cairo_line_to(cr_gl, x3, y3);
+	  cairo_stroke(cr_gl);
+
+	  cairo_surface_write_to_png(surface_gl, "C:/Users/Youlean/Desktop/imageGL.png");
+
+	  cairo_destroy(cr_gl);
+	  cairo_surface_destroy(surface_gl);
+
+
+
+
+
+
+
+
+
     LPCREATESTRUCT lpcs = (LPCREATESTRUCT) lParam;
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LPARAM) (lpcs->lpCreateParams));
     int mSec = int(1000.0 / sFPS);
@@ -661,7 +757,6 @@ bool IGraphicsWin::DrawScreen(IRECT* pR)
   EndPaint(hWnd, &ps);
   return true;
 }
-
 
 void* IGraphicsWin::OpenWindow(void* pParentWnd)
 {

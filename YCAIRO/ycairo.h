@@ -28,17 +28,17 @@
 
 #if defined(_WIN64)
 #if defined(_DEBUG)
-#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-x64-Debug.lib")
+//#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-x64-Debug.lib")
 #else
-#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-x64-Release.lib")
+//#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-x64-Release.lib")
 #endif
 
 #else // If Win32
 
 #if defined(_DEBUG)
-#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-Win32-Debug.lib")
+//#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-Win32-Debug.lib")
 #else
-#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-Win32-Release.lib")
+//#pragma comment(lib,"..\\..\\YCAIRO\\Cairo_Graphics\\Lib-Win\\cairo-Win32-Release.lib")
 #endif
 #endif
 
