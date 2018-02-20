@@ -714,17 +714,40 @@ bool IGraphicsWin::DrawScreen(IRECT* pR)
   cairo_set_source_rgb(cr_gl, 1, 0, 1);
   cairo_paint(cr_gl);
 
-  for (int i = 0; i < 100; i++)
-  {
-	  double rndW = rand() % WIDTH;
-	  double rndH = rand() % HEIGHT;
-	  
-	  cairo_set_source_rgba(cr_gl, rand() % 256 / 256.0, rand() % 256 / 256.0, rand() % 256 / 256.0, 0.8);
-	  cairo_arc(cr_gl, rndW, rndH, 10, 0, 6.283185307179586476925286766559);
+  //for (int i = 0; i < 100; i++)
+  //{
+	 // double rndW = rand() % WIDTH;
+	 // double rndH = rand() % HEIGHT;
+	 // 
+	 // cairo_set_source_rgba(cr_gl, rand() % 256 / 256.0, rand() % 256 / 256.0, rand() % 256 / 256.0, 0.8);
+	 // cairo_arc(cr_gl, rndW, rndH, 10, 0, 6.283185307179586476925286766559);
 
-	  cairo_fill(cr_gl);
+	 // cairo_fill(cr_gl);
+  //}
+
+
+  cairo_set_source_rgba(cr_gl, 0, 0, 1, 0.3);
+  cairo_set_line_width(cr_gl, 1);
+
+  double lineLoopSize = 1200;
+
+  for (int i = 0; i < lineLoopSize; i++)
+  {
+  	double rndW = rand() % WIDTH;
+  	double rndH = rand() % HEIGHT;
+
+  	if (i == 0) cairo_move_to(cr_gl, 0, rndH);
+  	else cairo_line_to(cr_gl, i, rndH);
   }
 
+  cairo_stroke(cr_gl);
+
+
+  cairo_set_source_rgba(cr_gl, 0, 0, 0, 1);
+  cairo_set_line_width(cr_gl, 10);
+  cairo_move_to(cr_gl, 50, 0);
+  cairo_line_to(cr_gl, 550, 250);
+  cairo_stroke(cr_gl);
 
   cairo_surface_flush(surface_gl);
   cairo_gl_surface_swapbuffers(surface_gl);
@@ -733,9 +756,9 @@ bool IGraphicsWin::DrawScreen(IRECT* pR)
 
   auto fps = frames / IPMAX((timediff(drawStart) / 1000), 1);
   
-  //DBGMSG("%i FPS", fps);
+  DBGMSG("%i FPS", fps);
 
-  Sleep(10);
+  //Sleep(10);
 
   return true;
 }
@@ -827,15 +850,20 @@ void* IGraphicsWin::OpenWindow(void* pParentWnd)
   HGLRC	hRC = wglCreateContext(hDC);
   wglMakeCurrent(hDC, hRC);
 
+  // Enables hardware anti aliasing
+  _putenv_s("CAIRO_GL_COMPOSITOR", "msaa");
 
   // Test openGL
   cairo_device = cairo_wgl_device_create(hRC);
-  cairo_gl_device_set_thread_aware(cairo_device, true);
+  //cairo_gl_device_set_thread_aware(cairo_device, true);
 
   surface_gl = cairo_gl_surface_create_for_dc(cairo_device, hDC, w, h);
   cr_gl = cairo_create(surface_gl);
 
-  
+  //cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_NONE); // 140fps
+  cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_FAST); // 40fps
+ //cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_GOOD); // 15fps
+
   //cairo_set_source_rgb(cr_gl, 1, 0, 1);
   //cairo_paint(cr_gl);
 
