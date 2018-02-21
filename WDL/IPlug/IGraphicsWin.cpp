@@ -5,6 +5,7 @@
 #include <commctrl.h>
 #include <cairo.h>
 #include <cairo-gl.h>
+#include <cairo-win32.h>
 #include <wininet.h>
 #include <chrono>
 #include <iostream>
@@ -22,13 +23,146 @@ static const char* wndClassName = "IPlugWndClass";
 static double sFPS = 0.0;
 
 
-static cairo_surface_t * surface_gl;
-static cairo_t *cr_gl;
+static cairo_surface_t * surface;
+static cairo_t *cr;
 static cairo_device_t *cairo_device;
 
 
 auto drawStart = std::chrono::system_clock::now();
 unsigned long frames = 0;
+
+
+
+//#define CAIRO_WIN32
+#define CAIRO_GL
+
+
+
+template<typename time>
+unsigned long timediff(const time& start) {
+	auto end = std::chrono::system_clock::now();
+
+	return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+}
+
+bool DRAW(IRECT* pR)
+{
+	auto start = std::chrono::system_clock::now();
+	int WIDTH = pR->W();
+	int HEIGHT = pR->H();
+
+	//cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_FAST);
+	//cairo_set_source_rgb(cr, 1, 0, 1);
+	//cairo_paint(cr);
+
+	//for (int i = 0; i < 100; i++)
+	//{
+	// double rndW = rand() % WIDTH;
+	// double rndH = rand() % HEIGHT;
+	// 
+	// cairo_set_source_rgba(cr_gl, rand() % 256 / 256.0, rand() % 256 / 256.0, rand() % 256 / 256.0, 0.8);
+	// cairo_arc(cr_gl, rndW, rndH, 10, 0, 6.283185307179586476925286766559);
+
+	// cairo_fill(cr_gl);
+	//}
+
+	//cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_NONE); // 140fps
+	//cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_FAST); // 40fps
+	//cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_GOOD); // 15fps
+
+	cairo_set_source_rgba(cr, 0, 0, 1, 0.3);
+	cairo_set_line_width(cr, 1);
+
+	double lineLoopSize = 600;
+
+	for (int i = 0; i < lineLoopSize; i++)
+	{
+		double rndW = rand() % WIDTH;
+		double rndH = rand() % HEIGHT;
+
+		if (i == 0) cairo_move_to(cr, 0, rndH);
+		else cairo_line_to(cr, i, rndH);
+	}
+
+	cairo_stroke(cr);
+
+
+	cairo_set_source_rgba(cr, 0, 0, 0, 1);
+	cairo_set_line_width(cr, 10);
+	cairo_move_to(cr, 50, 0);
+	cairo_line_to(cr, 550, 250);
+	cairo_stroke(cr);
+
+	//cairo_surface_flush(surface);
+
+#ifdef CAIRO_GL
+	cairo_gl_surface_swapbuffers(surface);
+#endif
+
+	frames++;
+
+	auto fps = frames / IPMAX((timediff(drawStart) / 1000), 1);
+
+	DBGMSG("%i FPS", fps);
+
+	//Sleep(10);
+
+	return true;
+}
+
+
+void SetPlatformContext(HDC hDC, IRECT *pRect = nullptr)
+{
+#ifdef CAIRO_WIN32
+		surface = cairo_win32_surface_create(hDC);
+		cr = cairo_create(surface);
+
+		DRAW(pRect);
+
+		cairo_destroy(cr);
+		cairo_surface_destroy(surface);
+#endif
+
+
+#ifdef CAIRO_GL
+	if (hDC != nullptr)
+	{
+		// Choose pixelformat
+		PIXELFORMATDESCRIPTOR pfd;
+		ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
+		pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+		pfd.nVersion = 1;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		pfd.iPixelType = PFD_TYPE_RGBA;
+		pfd.cColorBits = 32;
+		pfd.cDepthBits = 16;
+		pfd.iLayerType = PFD_MAIN_PLANE;
+
+		int pixelFormat = ChoosePixelFormat(hDC, &pfd);
+
+		SetPixelFormat(hDC, pixelFormat, NULL);
+
+		HGLRC	hRC = wglCreateContext(hDC);
+		wglMakeCurrent(hDC, hRC);
+
+		// Enables hardware anti aliasing
+		//_putenv_s("CAIRO_GL_COMPOSITOR", "msaa");
+
+		// Test openGL
+		cairo_device = cairo_wgl_device_create(hRC);
+		//cairo_gl_device_set_thread_aware(cairo_device, true);
+
+		surface = cairo_gl_surface_create_for_dc(cairo_device, hDC, 600, 600);
+		cr = cairo_create(surface);
+	}
+
+	else
+	{
+		cairo_destroy(cr);
+		cairo_surface_destroy(surface);
+	}
+#endif
+}
 
 std::string GetLastErrorAsString()
 {
@@ -123,83 +257,8 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
     {
       if (wParam == IPLUG_TIMER_ID)
       {
-
-        if (pGraphics->mParamEditWnd && pGraphics->mParamEditMsg != kNone)
-        {
-          switch (pGraphics->mParamEditMsg)
-          {
-            case kCommit:
-            {
-			  int charNumber = pGraphics->mEdControl->GetTextEntryLength();
-
-			  std::wstring txt;
-			  txt.resize(charNumber);
-
-			  Windows_UTF_Converter convert;
-
-              SendMessageW(pGraphics->mParamEditWnd, WM_GETTEXT, charNumber, (LPARAM) txt.c_str());
-
-              if(pGraphics->mEdParam)
-              {
-                IParam::EParamType type = pGraphics->mEdParam->Type();
-
-                if ( type == IParam::kTypeEnum || type == IParam::kTypeBool)
-                {
-                  int vi = 0;
-                  pGraphics->mEdParam->MapDisplayText((char*)convert.utf16_to_utf8(txt).c_str(), &vi);
-                  v = (double) vi;
-                }
-                else
-                {
-                  v = atof((char*)convert.utf16_to_utf8(txt).c_str());
-                  if (pGraphics->mEdParam->DisplayIsNegated())
-                  {
-                    v = -v;
-                  }
-                }
-                pGraphics->mEdControl->SetValueFromUserInput(pGraphics->mEdParam->GetNormalized(v));
-              }
-              else
-              {
-                pGraphics->mEdControl->TextFromTextEntry((char*)convert.utf16_to_utf8(txt).c_str());
-              }
-              // Fall through.
-            }
-            case kCancel:
-            {
-              SetWindowLongPtr(pGraphics->mParamEditWnd, GWLP_WNDPROC, (LPARAM) pGraphics->mDefEditProc);
-              DestroyWindow(pGraphics->mParamEditWnd);
-              pGraphics->mParamEditWnd = 0;
-              pGraphics->mEdParam = 0;
-              pGraphics->mEdControl = 0;
-              pGraphics->mDefEditProc = 0;
-            }
-            break;
-          }
-          pGraphics->mParamEditMsg = kNone;
-          return 0; // TODO: check this!
-        }
-
-        IRECT dirtyR;
-        if (pGraphics->IsDirty(&dirtyR))
-        {
-          RECT r = { dirtyR.L, dirtyR.T, dirtyR.R, dirtyR.B };
-
-          InvalidateRect(hWnd, &r, FALSE);
-
-          if (pGraphics->mParamEditWnd)
-          {
-            IRECT* notDirtyR = pGraphics->mEdControl->GetDrawRECT();
-            RECT r2 = { notDirtyR->L, notDirtyR->T, notDirtyR->R, notDirtyR->B };
-            ValidateRect(hWnd, &r2); // make sure we dont redraw the edit box area
-            UpdateWindow(hWnd);
-            pGraphics->mParamEditMsg = kUpdate;
-          }
-          else
-          {
-            UpdateWindow(hWnd);
-          }
-        }
+		  InvalidateRect(hWnd, NULL, FALSE);
+		  //UpdateWindow(hWnd);
       }
       return 0;
     }
@@ -379,12 +438,19 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
 	}
     case WM_PAINT:
     {
-      RECT r;
-      if (GetUpdateRect(hWnd, &r, FALSE))
-      {
-        IRECT ir(r.left, r.top, r.right, r.bottom);
-        pGraphics->Draw(&ir);
-      }
+        IRECT ir(0, 0, pGraphics->Width(), pGraphics->Height());
+		
+#ifdef CAIRO_WIN32
+		PAINTSTRUCT ps;
+		HDC dc = BeginPaint(hWnd, &ps);
+		SetPlatformContext(dc, &ir);
+		EndPaint(hWnd, &ps);	
+#endif // CAIRO_WIN32
+#ifdef CAIRO_GL
+		DRAW(&ir);
+#endif // CAIRO_GL
+
+ 
       return 0;
     }
 
@@ -691,77 +757,12 @@ int IGraphicsWin::ShowMessageBox(const char* pText, const char* pCaption, int ty
   return MessageBox(GetMainWnd(), pText, pCaption, type);
 }
 
-template<typename time>
-unsigned long timediff(const time& start) {
-	auto end = std::chrono::system_clock::now();
-
-	return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-}
-
 bool IGraphicsWin::DrawScreen(IRECT* pR)
 {
-  PAINTSTRUCT ps;
-  //HWND hWnd = (HWND) GetWindow();
-  //HDC dc = BeginPaint(hWnd, &ps);
-  //BitBlt(dc, pR->L, pR->T, pR->W(), pR->H(), mDrawBitmap->getDC(), pR->L, pR->T, SRCCOPY);
-  //EndPaint(hWnd, &ps);
-
-  auto start = std::chrono::system_clock::now();
-  int WIDTH = pR->W();
-  int HEIGHT = pR->H();
-
-  //cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_FAST);
-  cairo_set_source_rgb(cr_gl, 1, 0, 1);
-  cairo_paint(cr_gl);
-
-  //for (int i = 0; i < 100; i++)
-  //{
-	 // double rndW = rand() % WIDTH;
-	 // double rndH = rand() % HEIGHT;
-	 // 
-	 // cairo_set_source_rgba(cr_gl, rand() % 256 / 256.0, rand() % 256 / 256.0, rand() % 256 / 256.0, 0.8);
-	 // cairo_arc(cr_gl, rndW, rndH, 10, 0, 6.283185307179586476925286766559);
-
-	 // cairo_fill(cr_gl);
-  //}
-
-
-  cairo_set_source_rgba(cr_gl, 0, 0, 1, 0.3);
-  cairo_set_line_width(cr_gl, 1);
-
-  double lineLoopSize = 1200;
-
-  for (int i = 0; i < lineLoopSize; i++)
-  {
-  	double rndW = rand() % WIDTH;
-  	double rndH = rand() % HEIGHT;
-
-  	if (i == 0) cairo_move_to(cr_gl, 0, rndH);
-  	else cairo_line_to(cr_gl, i, rndH);
-  }
-
-  cairo_stroke(cr_gl);
-
-
-  cairo_set_source_rgba(cr_gl, 0, 0, 0, 1);
-  cairo_set_line_width(cr_gl, 10);
-  cairo_move_to(cr_gl, 50, 0);
-  cairo_line_to(cr_gl, 550, 250);
-  cairo_stroke(cr_gl);
-
-  cairo_surface_flush(surface_gl);
-  cairo_gl_surface_swapbuffers(surface_gl);
-
-  frames++;
-
-  auto fps = frames / IPMAX((timediff(drawStart) / 1000), 1);
-  
-  DBGMSG("%i FPS", fps);
-
-  //Sleep(10);
-
+	
   return true;
 }
+
 
 void* IGraphicsWin::OpenWindow(void* pParentWnd)
 {
@@ -826,49 +827,11 @@ void* IGraphicsWin::OpenWindow(void* pParentWnd)
     if (!ok) EnableTooltips(ok);
   }
 
-
-
-
-  // Create cairo gl
+#ifdef CAIRO_GL
   HDC hDC = GetDC(mPlugWnd);
 
-  // Choose pixelformat
-  PIXELFORMATDESCRIPTOR pfd;
-  ZeroMemory(&pfd, sizeof(PIXELFORMATDESCRIPTOR));
-  pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-  pfd.nVersion = 1;
-  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-  pfd.iPixelType = PFD_TYPE_RGBA;
-  pfd.cColorBits = 32;
-  pfd.cDepthBits = 16;
-  pfd.iLayerType = PFD_MAIN_PLANE;
-
-  int pixelFormat = ChoosePixelFormat(hDC, &pfd);
-
-  SetPixelFormat(hDC, pixelFormat, NULL);
-
-  HGLRC	hRC = wglCreateContext(hDC);
-  wglMakeCurrent(hDC, hRC);
-
-  // Enables hardware anti aliasing
-  _putenv_s("CAIRO_GL_COMPOSITOR", "msaa");
-
-  // Test openGL
-  cairo_device = cairo_wgl_device_create(hRC);
-  //cairo_gl_device_set_thread_aware(cairo_device, true);
-
-  surface_gl = cairo_gl_surface_create_for_dc(cairo_device, hDC, w, h);
-  cr_gl = cairo_create(surface_gl);
-
-  //cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_NONE); // 140fps
-  cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_FAST); // 40fps
- //cairo_set_antialias(cr_gl, CAIRO_ANTIALIAS_GOOD); // 15fps
-
-  //cairo_set_source_rgb(cr_gl, 1, 0, 1);
-  //cairo_paint(cr_gl);
-
-  //cairo_surface_write_to_png(surface_gl, "C:/Users/Youlean/Desktop/imageGL.png");
-
+  SetPlatformContext(hDC);
+#endif
 
   return mPlugWnd;
 }
@@ -946,9 +909,10 @@ void IGraphicsWin::SetWindowTitle(char* str)
 
 void IGraphicsWin::CloseWindow()
 {
-	cairo_destroy(cr_gl);
-	cairo_surface_destroy(surface_gl);
+	cairo_destroy(cr);
+	cairo_surface_destroy(surface);
 	cairo_device_destroy(cairo_device);
+
 
   if (mPlugWnd)
   {
