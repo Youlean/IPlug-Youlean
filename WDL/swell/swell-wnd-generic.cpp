@@ -42,8 +42,6 @@ int g_swell_want_nice_style = 1; //unused but here for compat
 
 HWND__ *SWELL_topwindows;
 
-HWND DialogBoxIsActive();
-
 static HWND s_captured_window;
 HWND SWELL_g_focuswnd; // update from focus-in-event / focus-out-event signals, have to enable the GDK_FOCUS_CHANGE_MASK bits for the gdkwindow
 static DWORD s_lastMessagePos;
@@ -63,7 +61,6 @@ void SWELL_initargs(int *argc, char ***argv)
   if (!SWELL_gdk_active) 
   {
    // maybe make the main app call this with real parms
-    XInitThreads();
     SWELL_gdk_active = gdk_init_check(argc,argv) ? 1 : -1;
     if (SWELL_gdk_active > 0)
       gdk_event_handler_set(swell_gdkEventHandler,NULL,NULL);
@@ -211,7 +208,7 @@ static void swell_manageOSwindow(HWND hwnd, bool wantfocus)
  
         RECT r = hwnd->m_position;
         GdkWindowAttr attr={0,};
-        attr.title = (char *)"";
+        attr.title = "";
         attr.event_mask = GDK_ALL_EVENTS_MASK|GDK_EXPOSURE_MASK;
         attr.x = r.left;
         attr.y = r.top;
@@ -224,18 +221,10 @@ static void swell_manageOSwindow(HWND hwnd, bool wantfocus)
         if (hwnd->m_oswindow) 
         {
           gdk_window_set_user_data(hwnd->m_oswindow,hwnd);
+          HWND DialogBoxIsActive();
           if (!(hwnd->m_style & WS_CAPTION)) 
           {
-            if (!hwnd->m_classname || strcmp(hwnd->m_classname,"__SWELL_MENU"))
-            {
-              gdk_window_set_type_hint(hwnd->m_oswindow,GDK_WINDOW_TYPE_HINT_SPLASHSCREEN);
-              gdk_window_set_decorations(hwnd->m_oswindow,(GdkWMDecoration) 0);
-              gdk_window_set_keep_above(hwnd->m_oswindow,true);
-            }
-            else
-            {
-              gdk_window_set_override_redirect(hwnd->m_oswindow,true);
-            }
+            gdk_window_set_override_redirect(hwnd->m_oswindow,true);
           }
           else if (/*hwnd == DialogBoxIsActive() || */ !(hwnd->m_style&WS_THICKFRAME))
           {
@@ -482,14 +471,11 @@ static void swell_gdkEventHandler(GdkEvent *evt, gpointer data)
         {
           // keep-above any owned windows while one of our windows has focus
           HWND h = SWELL_topwindows; 
-          HWND modalWindow = DialogBoxIsActive();
           while (h)
           {
             if (h->m_oswindow && h->m_owner)
             {
-              gdk_window_set_keep_above(h->m_oswindow,
-                SWELL_g_focus_oswindow && (!modalWindow || modalWindow == h)
-               );
+              gdk_window_set_keep_above(h->m_oswindow,!!SWELL_g_focus_oswindow);
             }
             h=h->m_next;
           }
@@ -701,9 +687,7 @@ void swell_runOSevents()
   {
 //    static GMainLoop *loop;
 //    if (!loop) loop = g_main_loop_new(NULL,TRUE);
-#if SWELL_TARGET_GDK == 2
     gdk_window_process_all_updates();
-#endif
 
     GMainContext *ctx=g_main_context_default();
     while (g_main_context_iteration(ctx,FALSE))
@@ -1412,12 +1396,7 @@ void SetWindowPos(HWND hwnd, HWND zorder, int x, int y, int cx, int cy, int flag
 #ifdef SWELL_TARGET_GDK
     if (hwnd->m_oswindow) 
     {
-      if (reposflag&2)
-      {
-        // make sure window is resizable (hints will be re-set on upcoming CONFIGURE event)
-        gdk_window_set_geometry_hints(hwnd->m_oswindow,NULL,(GdkWindowHints) 0); 
-      }
-
+      //printf("repos %d,%d,%d,%d, %d\n",f.left,f.top,f.right,f.bottom,reposflag);
       if ((reposflag&3)==3) gdk_window_move_resize(hwnd->m_oswindow,f.left,f.top,f.right-f.left,f.bottom-f.top);
       else if (reposflag&2) gdk_window_resize(hwnd->m_oswindow,f.right-f.left,f.bottom-f.top);
       else if (reposflag&1) gdk_window_move(hwnd->m_oswindow,f.left,f.top);
@@ -1480,14 +1459,12 @@ HWND SetParent(HWND hwnd, HWND newPar)
     hwnd->m_next=newPar->m_children;
     if (hwnd->m_next) hwnd->m_next->m_prev = hwnd;
     newPar->m_children=hwnd;
-    hwnd->m_style |= WS_CHILD;
   }
   else // add to top level windows
   {
     hwnd->m_next=SWELL_topwindows;
     if (hwnd->m_next) hwnd->m_next->m_prev = hwnd;
     SWELL_topwindows = hwnd;
-    hwnd->m_style &= ~WS_CHILD;
   }
 
   swell_manageOSwindow(hwnd,false);
@@ -1916,23 +1893,6 @@ static HWND swell_makeButton(HWND owner, int idx, RECT *tr, const char *label, b
 
 #endif
 
-static void paintDialogBackground(HWND hwnd, const RECT *r, HDC hdc)
-{
-  HBRUSH hbrush = (HBRUSH) SendMessage(GetParent(hwnd),WM_CTLCOLORSTATIC,(WPARAM)hdc,(LPARAM)hwnd);
-  if (hbrush == (HBRUSH)(INT_PTR)1) return;
-
-  if (hbrush) 
-  {
-    FillRect(hdc,r,hbrush);
-  }
-  else
-  {
-    hbrush = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
-    FillRect(hdc,r,hbrush);
-    DeleteObject(hbrush);
-  }
-}
-
 
 #ifndef SWELL_ENABLE_VIRTWND_CONTROLS
 struct buttonWindowState
@@ -1985,38 +1945,7 @@ static LRESULT WINAPI buttonWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
           }
           else if (sf == BS_AUTORADIOBUTTON)
           {
-            int x;
-            for (x=0;x<2;x++)
-            {
-              HWND nw = x ? hwnd->m_prev : hwnd->m_next;
-              while (nw)
-              {
-                if (nw->m_classname && !strcmp(nw->m_classname,"Button"))
-                {
-                  if (x && (nw->m_style & WS_GROUP)) break;
-
-                  if ((nw->m_style & 0xf) == BS_AUTORADIOBUTTON)
-                  {
-                    buttonWindowState *nws = (buttonWindowState*)nw->m_private_data;
-                    if (nws && (nws->state&3))
-                    {
-                      nws->state &= ~3;
-                      InvalidateRect(nw,NULL,FALSE);
-                    }
-                  }
-  
-                  if (nw->m_style & WS_GROUP) break;
-                }
-                else 
-                {
-                  break;
-                }
-
-                nw=x ? nw->m_prev : nw->m_next;
-              }
-            }
-
-            s->state = 1 | (s->state&~3);
+            // todo: uncheck other nearby radios 
           }
           SendMessage(hwnd->m_parent,WM_COMMAND,MAKEWPARAM(hwnd->m_id,BN_CLICKED),(LPARAM)hwnd);
         }
@@ -2030,8 +1959,6 @@ static LRESULT WINAPI buttonWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
           buttonWindowState *s = (buttonWindowState*)hwnd->m_private_data;
           RECT r; 
           GetClientRect(hwnd,&r); 
-          paintDialogBackground(hwnd,&r,ps.hdc);
-
           bool pressed = GetCapture()==hwnd;
 
           SetTextColor(ps.hdc,hwnd->m_enabled ? GetSysColor(COLOR_BTNTEXT): RGB(128,128,128));
@@ -2047,9 +1974,9 @@ static LRESULT WINAPI buttonWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 
             HPEN pen=CreatePen(PS_SOLID,0,RGB(0,0,0));
             HGDIOBJ oldPen = SelectObject(ps.hdc,pen);
-            int st = (int)(s->state&3);
             if (sf == BS_AUTOCHECKBOX || sf == BS_AUTO3STATE)
             {
+              int st = (int)(s->state&3);
               if (st==3||(st==2 && (hwnd->m_style & 0xf) == BS_AUTOCHECKBOX)) st=1;
               
               HBRUSH br = CreateSolidBrush(st==2?RGB(192,192,192):RGB(255,255,255));
@@ -2079,20 +2006,7 @@ static LRESULT WINAPI buttonWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
             }
             else if (sf == BS_AUTORADIOBUTTON)
             {
-              HBRUSH br = CreateSolidBrush(RGB(255,255,255));
-              HGDIOBJ oldBrush = SelectObject(ps.hdc,br);
-              Ellipse(ps.hdc,tr.left,tr.top,tr.right,tr.bottom);
-              SelectObject(ps.hdc,oldBrush);
-              DeleteObject(br);
-              if (st)
-              {
-                const int amt =  (tr.right-tr.left)/6 + 1;
-                br = CreateSolidBrush(RGB(0,0,0));
-                oldBrush = SelectObject(ps.hdc,br);
-                Ellipse(ps.hdc,tr.left+amt,tr.top+amt,tr.right-amt,tr.bottom-amt);
-                SelectObject(ps.hdc,oldBrush);
-                DeleteObject(br);
-              }
+              // todo radio circle
             }
             SelectObject(ps.hdc,oldPen);
             DeleteObject(pen);
@@ -2100,6 +2014,7 @@ static LRESULT WINAPI buttonWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
           }
           else
           {
+
             HBRUSH br = CreateSolidBrush(GetSysColor(COLOR_3DFACE));
             FillRect(ps.hdc,&r,br);
             DeleteObject(br);
@@ -2690,7 +2605,9 @@ static LRESULT WINAPI progressWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
           RECT r; 
           GetClientRect(hwnd,&r); 
 
-          paintDialogBackground(hwnd,&r,ps.hdc);
+          HBRUSH hbrush = (HBRUSH) SendMessage(GetParent(hwnd),WM_CTLCOLORSTATIC,(WPARAM)ps.hdc,(LPARAM)hwnd);
+          if (hbrush == (HBRUSH)(INT_PTR)1) hbrush = NULL;
+          if (hbrush) FillRect(ps.hdc,&r,hbrush);
 
           if (hwnd->m_private_data)
           {
@@ -2774,7 +2691,7 @@ static LRESULT WINAPI trackbarWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
       {
         RECT r;
         GetClientRect(hwnd,&r);
-        const int rad = wdl_min((r.bottom-r.top)/2-1,track_h);
+        const int rad = min((r.bottom-r.top)/2-1,track_h);
         int *state = (int *)hwnd->m_private_data;
         const int range = state[1];
         const int low = LOWORD(range), high=HIWORD(range);
@@ -2794,7 +2711,7 @@ static LRESULT WINAPI trackbarWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
       {
         RECT r;
         GetClientRect(hwnd,&r);
-        const int rad = wdl_min((r.bottom-r.top)/2-1,track_h);
+        const int rad = min((r.bottom-r.top)/2-1,track_h);
         int *state = (int *)hwnd->m_private_data;
         const int range = state[1];
         const int low = LOWORD(range), high=HIWORD(range);
@@ -2841,7 +2758,7 @@ static LRESULT WINAPI trackbarWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
           }
 
           HBRUSH br = CreateSolidBrush(GetSysColor(COLOR_3DHILIGHT));
-          const int rad = wdl_min((r.bottom-r.top)/2-1,track_h);
+          const int rad = min((r.bottom-r.top)/2-1,track_h);
 
           RECT sr = r;
           sr.left += rad;
@@ -3485,8 +3402,7 @@ static LRESULT listViewWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
     case WM_LBUTTONDBLCLK:
     case WM_LBUTTONDOWN:
       SetFocus(hwnd);
-      if (msg == WM_LBUTTONDOWN) SetCapture(hwnd);
-      else ReleaseCapture();
+      SetCapture(hwnd);
 
       if (lvs && lvs->m_last_row_height>0)
       {
@@ -3526,22 +3442,6 @@ static LRESULT listViewWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
           return 1;
         }
 
-        int subitem = 0;
-
-        {
-          const int n=lvs->m_cols.GetSize();
-          const bool has_image = lvs->m_status_imagelist && (lvs->m_status_imagelist_type == LVSIL_SMALL || lvs->m_status_imagelist_type == LVSIL_STATE);
-          int xpos=0, xpt = GET_X_LPARAM(lParam);
-          if (has_image) xpos += lvs->m_last_row_height;
-          for (int x=0;x<n;x++)
-          {
-            const int xwid = lvs->m_cols.Get()[x].xwid;
-            if (xpt >= xpos && xpt < xpos+xwid) { subitem = x; break; }
-            xpos += xwid;
-          }
-        }
-
-
         if (!lvs->m_is_multisel)
         {
           const int oldsel = lvs->m_selitem;
@@ -3555,12 +3455,11 @@ static LRESULT listViewWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
           else
           {
             if (hit >= 0) lvs->m_capmode = (hit&0xffff)|(2<<16);
-
-            NMLISTVIEW nm={{hwnd,hwnd->m_id,msg == WM_LBUTTONDBLCLK ? NM_DBLCLK : NM_CLICK},hit,subitem,0,};
+            NMLISTVIEW nm={{hwnd,hwnd->m_id,msg == WM_LBUTTONDBLCLK ? NM_DBLCLK : NM_CLICK},hit,0,0,};
             SendMessage(GetParent(hwnd),WM_NOTIFY,hwnd->m_id,(LPARAM)&nm);
             if (oldsel != lvs->m_selitem) 
             {
-              NMLISTVIEW nm={{hwnd,hwnd->m_id,LVN_ITEMCHANGED},lvs->m_selitem,1,LVIS_SELECTED,};
+              NMLISTVIEW nm={{hwnd,hwnd->m_id,LVN_ITEMCHANGED},lvs->m_selitem,0,LVIS_SELECTED,};
               SendMessage(GetParent(hwnd),WM_NOTIFY,hwnd->m_id,(LPARAM)&nm);
             }
           }
@@ -3592,7 +3491,7 @@ static LRESULT listViewWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
             else
             {
               lvs->m_capmode = (hit&0xffff)|(2<<16);
-              NMLISTVIEW nm={{hwnd,hwnd->m_id,msg == WM_LBUTTONDBLCLK ? NM_DBLCLK : NM_CLICK},hit,subitem,LVIS_SELECTED,};
+              NMLISTVIEW nm={{hwnd,hwnd->m_id,msg == WM_LBUTTONDBLCLK ? NM_DBLCLK : NM_CLICK},hit,0,LVIS_SELECTED,};
               SendMessage(GetParent(hwnd),WM_NOTIFY,hwnd->m_id,(LPARAM)&nm);
               if (changed)
               {
@@ -3758,9 +3657,9 @@ forceMouseMove:
                 if (str) 
                 {
                   ar=tr;
-                  ar.left += xpos;
                   if (ncols > 0)
                   {
+                    ar.left += xpos;
                     ar.right = ar.left + cols[col].xwid - 3;
                     xpos += cols[col].xwid;
                   }
@@ -4559,9 +4458,7 @@ HWND SWELL_MakeControl(const char *cname, int idx, const char *classname, int st
     HWND hwnd = new HWND__(m_make_owner,idx,&tr,NULL, !(style&SWELL_NOT_WS_VISIBLE), progressWindowProc);
     hwnd->m_style = WS_CHILD | (style & ~SWELL_NOT_WS_VISIBLE);
     hwnd->m_classname = "msctls_progress32";
-    int *state = (int *)calloc(2,sizeof(int)); // pos, range
-    if (state) state[1] = 100<<16;
-    hwnd->m_private_data = (INT_PTR) state;
+    hwnd->m_private_data = (INT_PTR) calloc(2,sizeof(int)); // pos, range
     hwnd->m_wndproc(hwnd,WM_CREATE,0,0);
     return hwnd;
   }
@@ -5040,7 +4937,7 @@ int ListView_SubItemHitTest(HWND h, LVHITTESTINFO *pinf)
   if (!lvs || !pinf) return -1;
 
   const int row = ListView_HitTest(h, pinf);
-  int x,xpos=-lvs->m_scroll_x,idx=0;
+  int x,xpos=0,idx=0;
   const int n=lvs->m_cols.GetSize();
   const bool has_image = lvs->m_status_imagelist && (lvs->m_status_imagelist_type == LVSIL_SMALL || lvs->m_status_imagelist_type == LVSIL_STATE);
   if (has_image) xpos += lvs->m_last_row_height;
@@ -5070,42 +4967,12 @@ void ListView_EnsureVisible(HWND h, int i, BOOL pok)
 }
 bool ListView_GetSubItemRect(HWND h, int item, int subitem, int code, RECT *r)
 {
-  listViewState *lvs = h ? (listViewState *)h->m_private_data : NULL;
-  if (!lvs || !r) return false;
-
-  r->top = lvs->m_last_row_height * item - lvs->m_scroll_y;
-  if (lvs->HasColumnHeaders(h)) r->top += lvs->m_last_row_height+2;
-  RECT cr;
-  GetClientRect(h,&cr);
-  r->left=cr.left;
-  r->right=cr.right;
-
-  if (subitem>0)
-  {
-    int x,xpos=-lvs->m_scroll_x;
-    const int n=lvs->m_cols.GetSize();
-    for (x = 0; x < n; x ++)
-    {
-      const int xwid = lvs->m_cols.Get()[x].xwid;
-      if (x == subitem)
-      {
-        r->left=xpos;
-        r->right=xpos+xwid;
-        break;
-      }
-      xpos += xwid;
-    }
-  }
-
-
-  r->bottom = r->top + lvs->m_last_row_height;
-
-  return true;
+  if (!h) return false;
+  return false;
 }
-
 bool ListView_GetItemRect(HWND h, int item, RECT *r, int code)
 {
-  return ListView_GetSubItemRect(h, item, -1, code, r);
+  return false;
 }
 
 bool ListView_Scroll(HWND h, int xscroll, int yscroll)
@@ -5122,13 +4989,7 @@ bool ListView_DeleteColumn(HWND h, int pos)
 }
 int ListView_GetCountPerPage(HWND h)
 {
-  listViewState *lvs = h ? (listViewState *)h->m_private_data : NULL;
-  if (!lvs || !lvs->m_last_row_height) return 0;
-
-  RECT cr;
-  GetClientRect(h,&cr);
-  if (lvs->HasColumnHeaders(h)) cr.bottom -= lvs->m_last_row_height+2;
-  return (cr.bottom-cr.top) / lvs->m_last_row_height;
+  return 1;
 }
 
 HWND ChildWindowFromPoint(HWND h, POINT p)
@@ -5190,7 +5051,7 @@ void UpdateWindow(HWND hwnd)
 {
   if (hwnd)
   {
-#if SWELL_TARGET_GDK == 2
+#ifdef SWELL_TARGET_GDK
     while (hwnd && !hwnd->m_oswindow) hwnd=hwnd->m_parent;
     if (hwnd && hwnd->m_oswindow) gdk_window_process_updates(hwnd->m_oswindow,true);
 #endif
@@ -5200,50 +5061,12 @@ void UpdateWindow(HWND hwnd)
 BOOL InvalidateRect(HWND hwnd, const RECT *r, int eraseBk)
 { 
   if (!hwnd) return FALSE;
-
+  HWND hwndCall=hwnd;
 #ifdef SWELL_LICE_GDI
-  RECT rect = { 0,0,
-                hwnd->m_position.right - hwnd->m_position.left,
-                hwnd->m_position.bottom - hwnd->m_position.top };
-
-  if (r)
-  {
-    if (!IntersectRect(&rect,&rect,r)) return FALSE;
-  }
-
-  // rect is in client coordinates of h
-  HWND h = hwnd;
-  for (;;)
-  {
-    if (!h->m_visible) return FALSE;
-
-    NCCALCSIZE_PARAMS tr;
-    memset(&tr,0,sizeof(tr));
-    tr.rgrc[0] = h->m_position;
-    if (h->m_oswindow)
-    {
-      tr.rgrc[0].right -= tr.rgrc[0].left;
-      tr.rgrc[0].bottom -= tr.rgrc[0].top;
-      tr.rgrc[0].left = tr.rgrc[0].top = 0;
-    }
-    if (h->m_wndproc) h->m_wndproc(h,WM_NCCALCSIZE,0,(LPARAM)&tr);
-
-    rect.left += tr.rgrc[0].left;
-    rect.top += tr.rgrc[0].top;
-    rect.right += tr.rgrc[0].left;
-    rect.bottom += tr.rgrc[0].top;
-    if (!IntersectRect(&rect,&rect,&tr.rgrc[0])) return FALSE;
-
-    if (h->m_oswindow) break;
-
-    h=h->m_parent;
-    if (!h) return FALSE;
-  }
-
   {
     hwnd->m_invalidated=true;
     HWND t=hwnd->m_parent;
-    while (t)
+    while (t && !t->m_child_invalidated) 
     { 
       if (eraseBk)
       {
@@ -5254,15 +5077,34 @@ BOOL InvalidateRect(HWND hwnd, const RECT *r, int eraseBk)
       t=t->m_parent; 
     }
   }
-#ifdef SWELL_TARGET_GDK
-  GdkRectangle gdkr;
-  gdkr.x = rect.left;
-  gdkr.y = rect.top;
-  gdkr.width = rect.right-rect.left;
-  gdkr.height = rect.bottom-rect.top;
-
-  gdk_window_invalidate_rect(h->m_oswindow,hwnd!=h || r ? &gdkr : NULL,true);
 #endif
+#ifdef SWELL_TARGET_GDK
+  GdkRectangle rect;
+  if (r) { rect.x = r->left; rect.y = r->top; rect.width = r->right-r->left; rect.height = r->bottom - r->top; }
+  else
+  {
+    rect.x=rect.y=0;
+    rect.width = hwnd->m_position.right - hwnd->m_position.left;
+    rect.height = hwnd->m_position.bottom - hwnd->m_position.top;
+  }
+  while (hwnd && !hwnd->m_oswindow) 
+  {
+    NCCALCSIZE_PARAMS tr={{ hwnd->m_position, },};
+    if (hwnd->m_wndproc) hwnd->m_wndproc(hwnd,WM_NCCALCSIZE,0,(LPARAM)&tr);
+    rect.x += tr.rgrc[0].left;
+    rect.y += tr.rgrc[0].top;
+    hwnd=hwnd->m_parent;
+  }
+  if (hwnd && hwnd->m_oswindow) 
+  {
+    RECT tr={0,0,hwnd->m_position.right-hwnd->m_position.left,hwnd->m_position.bottom-hwnd->m_position.top};
+    NCCALCSIZE_PARAMS p={{tr,},};
+    if (hwnd->m_wndproc) hwnd->m_wndproc(hwnd,WM_NCCALCSIZE,0,(LPARAM)&p);
+    rect.x += p.rgrc[0].left;
+    rect.y += p.rgrc[0].top;
+
+    gdk_window_invalidate_rect(hwnd->m_oswindow,hwnd!=hwndCall || r ? &rect : NULL,true);
+  }
 #endif
   return TRUE;
 }
@@ -6299,193 +6141,14 @@ void SWELL_GenerateDialogFromList(const void *_list, int listsz)
   }
 }
 
-#ifdef SWELL_TARGET_GDK
-struct bridgeState {
-  GdkWindow *w, *delw;
-  bool lastvis;
-  RECT lastrect;
-};
-static LRESULT xbridgeProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-  switch (uMsg)
-  {
-    case WM_DESTROY:
-      if (hwnd && hwnd->m_private_data)
-      {
-        bridgeState *bs = (bridgeState*)hwnd->m_private_data;
-        hwnd->m_private_data = 0;
-        if (bs->w) gdk_window_destroy(bs->w);
-        if (bs->delw) gdk_window_destroy(bs->delw);
-        delete bs;
-      }
-    break;
-    case WM_TIMER:
-      if (wParam != 1) break;
-    case WM_MOVE:
-    case WM_SIZE:
-      if (hwnd && hwnd->m_private_data)
-      {
-        bridgeState *bs = (bridgeState*)hwnd->m_private_data;
-        if (bs->w)
-        {
-          HWND h = hwnd->m_parent;
-          RECT tr = hwnd->m_position;
-          while (h)
-          {
-            RECT cr = h->m_position;
-            if (h->m_oswindow)
-            {
-              cr.right -= cr.left;
-              cr.bottom -= cr.top;
-              cr.left=cr.top=0;
-            }
-
-            if (h->m_wndproc)
-            {
-              NCCALCSIZE_PARAMS p = {{ cr }};
-              h->m_wndproc(h,WM_NCCALCSIZE,0,(LPARAM)&p);
-              cr = p.rgrc[0];
-            }
-            tr.left += cr.left;
-            tr.top += cr.top;
-            tr.right += cr.left;
-            tr.bottom += cr.top;
-
-            if (tr.left < cr.left) tr.left=cr.left;
-            if (tr.top < cr.top) tr.top = cr.top;
-            if (tr.right > cr.right) tr.right = cr.right;
-            if (tr.bottom > cr.bottom) tr.bottom = cr.bottom;
-
-            if (h->m_oswindow) break;
-            h=h->m_parent;
-          }
-
-          // todo: need to periodically check to see if the plug-in has resized its window
-          bool vis = IsWindowVisible(hwnd);
-          if (vis)
-          {
-#if SWELL_TARGET_GDK == 2
-            gint w=0,h=0,d=0;
-            gdk_window_get_geometry(bs->w,NULL,NULL,&w,&h,&d);
-#else
-            gint w=0,h=0;
-            gdk_window_get_geometry(bs->w,NULL,NULL,&w,&h);
-#endif
-            if (w > bs->lastrect.right-bs->lastrect.left) 
-            {
-              bs->lastrect.right = bs->lastrect.left + w;
-              tr.right++; // workaround "bug" in GDK -- if bs->w was resized via Xlib, GDK won't resize it unless it thinks the size changed
-            }
-            if (h > bs->lastrect.bottom-bs->lastrect.top) 
-            {
-              bs->lastrect.bottom = bs->lastrect.top + h;
-              tr.bottom++; // workaround "bug" in GDK -- if bs->w was resized via Xlib, GDK won't resize it unless it thinks the size changed
-            }
-          }
-
-          if (h && (bs->delw || (vis != bs->lastvis) || (vis&&memcmp(&tr,&bs->lastrect,sizeof(RECT))))) 
-          {
-            if (bs->lastvis && !vis)
-            {
-              gdk_window_hide(bs->w);
-              bs->lastvis = false;
-            }
-
-            if (bs->delw)
-            {
-              gdk_window_reparent(bs->w,h->m_oswindow,tr.left,tr.top);
-              gdk_window_resize(bs->w, tr.right-tr.left,tr.bottom-tr.top);
-              bs->lastrect=tr;
-
-              if (bs->delw)
-              {
-                gdk_window_destroy(bs->delw);
-                bs->delw=NULL;
-              }
-            }
-            else if (memcmp(&tr,&bs->lastrect,sizeof(RECT)))
-            {
-              bs->lastrect = tr;
-              gdk_window_move_resize(bs->w,tr.left,tr.top, tr.right-tr.left, tr.bottom-tr.top);
-            }
-            if (vis && !bs->lastvis)
-            {
-              gdk_window_show(bs->w);
-              gdk_window_raise(bs->w);
-              bs->lastvis = true;
-            }
-          }
-        }
-      }
-    break;
-  }
-  return DefWindowProc(hwnd,uMsg,wParam,lParam);
-}
-#endif
 
 HWND SWELL_CreateXBridgeWindow(HWND viewpar, void **wref, RECT *r)
 {
-  HWND hwnd = NULL;
   *wref = NULL;
-
 #ifdef SWELL_TARGET_GDK
 
-  GdkWindow *ospar = NULL;
-  HWND hpar = viewpar;
-  while (hpar)
-  {
-    ospar = hpar->m_oswindow;
-    if (ospar) break;
-    hpar = hpar->m_parent;
-  }
-
-  bridgeState *bs = new bridgeState;
-  bs->delw = NULL;
-  bs->lastvis = false;
-  memset(&bs->lastrect,0,sizeof(bs->lastrect));
-
-  GdkWindowAttr attr;
-  if (!ospar)
-  {
-    memset(&attr,0,sizeof(attr));
-    attr.event_mask = GDK_ALL_EVENTS_MASK|GDK_EXPOSURE_MASK;
-    attr.x = r->left;
-    attr.y = r->top;
-    attr.width = r->right-r->left;
-    attr.height = r->bottom-r->top;
-    attr.wclass = GDK_INPUT_OUTPUT;
-    attr.title = (char*)"Temporary window";
-    attr.window_type = GDK_WINDOW_TOPLEVEL;
-    ospar = bs->delw = gdk_window_new(ospar,&attr,GDK_WA_X|GDK_WA_Y);
-  }
-
-  memset(&attr,0,sizeof(attr));
-  attr.event_mask = GDK_ALL_EVENTS_MASK|GDK_EXPOSURE_MASK;
-  attr.x = r->left;
-  attr.y = r->top;
-  attr.width = r->right-r->left;
-  attr.height = r->bottom-r->top;
-  attr.wclass = GDK_INPUT_OUTPUT;
-  attr.title = (char*)"Plug-in Window";
-  attr.event_mask = GDK_ALL_EVENTS_MASK|GDK_EXPOSURE_MASK;
-  attr.window_type = GDK_WINDOW_CHILD;
-
-  bs->w = gdk_window_new(ospar,&attr,GDK_WA_X|GDK_WA_Y);
-
-  hwnd = new HWND__(viewpar,0,r,NULL, true, xbridgeProc);
-  hwnd->m_private_data = (INT_PTR) bs;
-  if (bs->w)
-  {
-#if SWELL_TARGET_GDK == 2
-    *wref = (void *) GDK_WINDOW_XID(bs->w);
-#else
-    *wref = (void *) gdk_x11_window_get_xid(bs->w);
 #endif
-    SetTimer(hwnd,1,100,NULL);
-    if (!bs->delw) SendMessage(hwnd,WM_SIZE,0,0);
-  }
-#endif
-  return hwnd;
+  return NULL;
 }
 
 #endif

@@ -1212,19 +1212,19 @@ __attribute__ ((visibility ("default"))) BOOL WINAPI DllMain(HINSTANCE hInstDLL,
 #define SRCCOPY 0
 #define SRCCOPY_USEALPHACHAN 0xdeadbeef
 #define PS_SOLID 0
+#define DT_CALCRECT 1
+#define DT_VCENTER 2
+#define DT_CENTER 4
+#define DT_END_ELLIPSIS 8
+#define DT_BOTTOM 16
+#define DT_RIGHT 32
+#define DT_SINGLELINE 64
+#define DT_NOPREFIX 128
+#define DT_NOCLIP 256
+#define DT_WORDBREAK 512
 
 #define DT_TOP 0
 #define DT_LEFT 0
-#define DT_CENTER 1
-#define DT_RIGHT 2
-#define DT_VCENTER 4
-#define DT_BOTTOM 8
-#define DT_WORDBREAK 0x10
-#define DT_SINGLELINE 0x20
-#define DT_NOCLIP 0x100
-#define DT_CALCRECT 0x400
-#define DT_NOPREFIX 0x800
-#define DT_END_ELLIPSIS 0x8000
 
 #define FW_DONTCARE         0
 #define FW_THIN             100
@@ -1250,6 +1250,7 @@ __attribute__ ((visibility ("default"))) BOOL WINAPI DllMain(HINSTANCE hInstDLL,
 #define PROOF_QUALITY 2
 #define NONANTIALIASED_QUALITY 3
 #define ANTIALIASED_QUALITY 4
+#define CLEARTYPE_QUALITY ANTIALIASED_QUALITY
 #define DEFAULT_PITCH 0
 #define DEFAULT_CHARSET 0
 #define ANSI_CHARSET 0
@@ -1258,8 +1259,6 @@ __attribute__ ((visibility ("default"))) BOOL WINAPI DllMain(HINSTANCE hInstDLL,
 
 #define NULL_PEN 1
 #define NULL_BRUSH 2
-
-#define GGI_MARK_NONEXISTING_GLYPHS 1
 
 #define GMEM_ZEROINIT 1
 #define GMEM_FIXED 0

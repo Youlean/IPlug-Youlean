@@ -194,6 +194,40 @@ static bool HDC_VALID(HDC__ *ct)
 }
 
 
+static WDL_HeapBuf *m_tmpbuf_pool;
+
+static WDL_HeapBuf *SWELL_GDP_GetTmpBuf()
+{
+  if (!m_ctxpool_mutex) m_ctxpool_mutex=new WDL_Mutex;
+  WDL_HeapBuf *ret=NULL;
+  m_ctxpool_mutex->Enter();
+  if (m_tmpbuf_pool)
+  {
+    ret = m_tmpbuf_pool;
+    m_tmpbuf_pool = ret && ret->GetSize() == sizeof(WDL_HeapBuf *) ? *(WDL_HeapBuf **)ret->Get() : NULL;
+  }
+  m_ctxpool_mutex->Leave();
+  if (!ret) ret = new WDL_HeapBuf;
+  return ret;
+}
+static void SWELL_GDP_DisposeTmpBuf(WDL_HeapBuf *hb)
+{
+  if (!hb) return;
+
+  if (!m_ctxpool_mutex) m_ctxpool_mutex=new WDL_Mutex;
+
+  if (hb->ResizeOK(sizeof(void*),false))
+  {
+    m_ctxpool_mutex->Enter();
+    *(WDL_HeapBuf **)hb->Get() = m_tmpbuf_pool;
+    m_tmpbuf_pool = hb;
+    m_ctxpool_mutex->Leave();
+  }
+  else delete hb;
+}
+
+
+
 #if !defined(SWELL_GDI_DEBUG) && defined(SWELL_CLEANUP_ON_UNLOAD)
 
 class _swellGdiUnloader
@@ -223,18 +257,18 @@ class _swellGdiUnloader
        }
      }
 
-//     if (m_tmpbuf_pool)
-//     {
-//       WDL_HeapBuf *ret = m_tmpbuf_pool;
-//       m_tmpbuf_pool=0;
-//
-//       while (ret)
-//       {
-//         WDL_HeapBuf *need_del = ret;
-//         ret = ret->GetSize()==sizeof(WDL_HeapBuf) ? *(WDL_HeapBuf**)ret->Get() : NULL;
-//         delete need_del;
-//       }
-//     }
+     if (m_tmpbuf_pool)
+     {
+       WDL_HeapBuf *ret = m_tmpbuf_pool;
+       m_tmpbuf_pool=0;
+
+       while (ret)
+       {
+         WDL_HeapBuf *need_del = ret;
+         ret = ret->GetSize()==sizeof(WDL_HeapBuf) ? *(WDL_HeapBuf**)ret->Get() : NULL;
+         delete need_del;
+       }
+     }
 
      delete m_ctxpool_mutex;
      m_ctxpool_mutex=NULL;

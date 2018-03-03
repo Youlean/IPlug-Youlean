@@ -381,6 +381,7 @@ SWELL_API_DEFINE(HANDLE, RemoveProp, (HWND, const char *))
 SWELL_API_DEFINE(bool, IsWindowVisible,(HWND hwnd))
 
 SWELL_API_DEFINE(bool, IsWindow, (HWND hwnd)) // very costly (compared to win32) -- enumerates all windows, searches for hwnd
+SWELL_API_DEFINE(void, CenterWindow, (HWND hwnd))
 
 
 /*
@@ -997,7 +998,6 @@ SWELL_API_DEFINE(void, SetTextColor,(HDC ctx, int col))
 SWELL_API_DEFINE(int, GetTextColor,(HDC ctx))
 SWELL_API_DEFINE(void, SetBkColor,(HDC ctx, int col))
 SWELL_API_DEFINE(void, SetBkMode,(HDC ctx, int col))
-SWELL_API_DEFINE(int, GetGlyphIndicesW, (HDC ctx, wchar_t *buf, int len, unsigned short *indices, int flags))
 
 SWELL_API_DEFINE(void, RoundRect,(HDC ctx, int x, int y, int x2, int y2, int xrnd, int yrnd))
 SWELL_API_DEFINE(void, PolyPolyline,(HDC ctx, POINT *pts, DWORD *cnts, int nseg))
@@ -1126,9 +1126,5 @@ SWELL_API_DEFINE(int,SWELL_GetOSXVersion,())
 
 SWELL_API_DEFINE(void,SWELL_Register_Cursor_Resource,(const char *idx, const char *name, int hotspot_x, int hotspot_y))
 
-#ifndef __APPLE__
-SWELL_API_DEFINE(bool, SWELL_ChooseColor, (HWND, int *, int ncustom, int *custom))
-SWELL_API_DEFINE(bool, SWELL_ChooseFont, (HWND, LOGFONT*))
-#endif
 
 #endif // _WDL_SWELL_H_API_DEFINED_

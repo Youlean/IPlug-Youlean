@@ -39,17 +39,14 @@
 
 #ifdef __APPLE__
 #include <Carbon/Carbon.h>
+#include <libkern/OSAtomic.h>
 #include <sched.h>
 #endif
 
-#ifdef __linux__
-#include <linux/sched.h>
-#endif
 
 #include <pthread.h>
 
 
-#include "../wdlatomic.h"
 #include "../mutex.h"
 #include "../assocarray.h"
 
@@ -131,7 +128,11 @@ BOOL CloseHandle(HANDLE hand)
   if (!hdr) return FALSE;
   if (hdr->type <= INTERNAL_OBJECT_START || hdr->type >= INTERNAL_OBJECT_END) return FALSE;
   
-  if (!wdl_atomic_decr(&hdr->count))
+#ifdef SWELL_TARGET_OSX
+  if (!OSAtomicDecrement32(&hdr->count))
+#else
+  if (!--hdr->count) // todo: atomic decrement on posix/ glib?
+#endif
   {
     switch (hdr->type)
     {
@@ -319,11 +320,9 @@ again:
         else
         {
           // timed wait
-#ifdef SWELL_TARGET_OSX
           struct timespec ts;
           ts.tv_sec = msTO/1000;
           ts.tv_nsec = (msTO%1000)*1000000;
-#endif
           while (!evt->isSignal) 
           {
 #ifdef SWELL_TARGET_OSX
@@ -333,11 +332,17 @@ again:
               break;
             }
 #else
+#if 1
             struct timeval tm={0,};
             gettimeofday(&tm,NULL);
-            struct timespec ts;
-            ts.tv_sec = msTO/1000 + tm.tv_sec;
-            ts.tv_nsec = (tm.tv_usec + (msTO%1000)*1000) * 1000;
+            ts.tv_sec += tm.tv_sec;
+            ts.tv_nsec += tm.tv_usec * 1000;
+#else
+            struct timespec ts2={0,0,};
+            clock_gettime(CLOCK_REALTIME,&ts2);
+            ts.tv_sec += ts2.tv_sec;
+            ts.tv_nsec += ts2.tv_nsec;
+#endif
             if (ts.tv_nsec>=1000000000) 
             {
               int n = ts.tv_nsec/1000000000;
@@ -426,57 +431,17 @@ HANDLE CreateThread(void *TA, DWORD stackSize, DWORD (*ThreadProc)(LPVOID), LPVO
 BOOL SetThreadPriority(HANDLE hand, int prio)
 {
   SWELL_InternalObjectHeader_Thread *evt=(SWELL_InternalObjectHeader_Thread*)hand;
-
-#ifdef __linux__
-  static int s_rt_max;
-  if (!evt && prio >= 0x10000 && prio < 0x10000 + 100)
-  {
-    s_rt_max = prio - 0x10000;
-    return TRUE;
-  }
-#endif
-
   if (!evt || evt->hdr.type != INTERNAL_OBJECT_THREAD) return FALSE;
   
   if (evt->done) return FALSE;
     
   int pol;
   struct sched_param param;
-  memset(&param,0,sizeof(param));
-
-#ifdef __linux__
-  // linux only has meaningful priorities if using realtime threads,
-  // for this to be enabled the caller should use:
-  // #ifdef __linux__
-  // SetThreadPriority(NULL,0x10000 + max_thread_priority (0..99));
-  // #endif
-  if (s_rt_max < 1 || prio <= THREAD_PRIORITY_NORMAL)
-  {
-    pol = SCHED_NORMAL;
-    param.sched_priority=0;
-  }
-  else 
-  {
-    int lb = s_rt_max;
-    if (prio < THREAD_PRIORITY_TIME_CRITICAL) 
-    {
-      lb--;
-      if (prio < THREAD_PRIORITY_HIGHEST)  
-      {
-        lb--;
-        if (prio < THREAD_PRIORITY_ABOVE_NORMAL) lb--;
-      }
-    }
-    param.sched_priority = lb < 1 ? 1 : lb;
-    pol = SCHED_RR;
-  }
-  return !pthread_setschedparam(evt->pt,pol,&param);
-#else
   if (!pthread_getschedparam(evt->pt,&pol,&param))
   {
-    // this is for darwin, but might work elsewhere
-    param.sched_priority = 31 + prio;
 
+//    printf("thread prio %d(%d,%d), %d(FIFO=%d, RR=%d)\n",param.sched_priority, sched_get_priority_min(pol),sched_get_priority_max(pol), pol,SCHED_FIFO,SCHED_RR);
+    param.sched_priority = 31 + prio;
     int mt=sched_get_priority_min(pol);
     if (param.sched_priority<mt||param.sched_priority > (mt=sched_get_priority_max(pol)))param.sched_priority=mt;
     
@@ -485,8 +450,10 @@ BOOL SetThreadPriority(HANDLE hand, int prio)
       return TRUE;
     }
   }
+  
+  
+  
   return FALSE;
-#endif
 }
 
 BOOL SetEvent(HANDLE hand)
@@ -631,7 +598,6 @@ BOOL WinSetRect(LPRECT lprc, int xLeft, int yTop, int xRight, int yBottom)
 
 int WinIntersectRect(RECT *out, const RECT *in1, const RECT *in2)
 {
-  RECT tmp = *in1; in1 = &tmp;
   memset(out,0,sizeof(RECT));
   if (in1->right <= in1->left) return false;
   if (in2->right <= in2->left) return false;

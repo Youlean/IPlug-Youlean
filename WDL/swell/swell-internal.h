@@ -484,6 +484,7 @@ struct HGDIOBJ__
  
   // if using CoreText to draw text
   void *ct_FontRef;
+  char font_quality;
 };
 
 struct HDC__ {
@@ -563,8 +564,6 @@ struct HDC__ {
 
 #include <gdk/gdk.h>
 #include <gdk/gdkkeysyms.h>
-#include <gdk/gdkx.h>
-
 
 #else
 // generic 

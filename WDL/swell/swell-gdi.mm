@@ -68,11 +68,6 @@ static int SWELL_GDI_GetOSXVersion()
 #include <immintrin.h>
 #endif
 
-#ifndef MAC_OS_X_VERSION_10_6
-// 10.5 SDK doesn't include CGContextSetAllowsFontSmoothing() in header (but apparently does in libs)
-CG_EXTERN void CGContextSetAllowsFontSmoothing(CGContextRef c, bool) AVAILABLE_MAC_OS_X_VERSION_10_2_AND_LATER;
-#endif
-
 #ifndef SWELL_NO_CORETEXT
 static bool IsCoreTextSupported()
 {
@@ -113,12 +108,6 @@ static NSString *CStringToNSString(const char *str)
   ret=(NSString *)CFStringCreateWithCString(NULL,str,kCFStringEncodingASCII);
   return ret;
 }
-CGColorSpaceRef __GetBitmapColorSpace()
-{
-  static CGColorSpaceRef cs;
-  if (!cs) cs = CGColorSpaceCreateDeviceRGB();
-  return cs;
-}
 
 CGColorSpaceRef __GetDisplayColorSpace()
 {
@@ -152,7 +141,7 @@ CGColorSpaceRef __GetDisplayColorSpace()
 static CGColorRef CreateColor(int col, float alpha=1.0f)
 {
   CGFloat cols[4]={GetRValue(col)/255.0f,GetGValue(col)/255.0f,GetBValue(col)/255.0f,alpha};
-  CGColorRef color=CGColorCreate(__GetBitmapColorSpace(),cols);
+  CGColorRef color=CGColorCreate(__GetDisplayColorSpace(),cols);
   return color;
 }
 
@@ -213,7 +202,7 @@ HDC SWELL_CreateMemContext(HDC hdc, int w, int h)
 {
   void *buf=calloc(w*4*h+ALIGN_EXTRA,1);
   if (!buf) return 0;
-  CGContextRef c=CGBitmapContextCreate(ALIGN_FBUF(buf),w,h,8,w*4, __GetBitmapColorSpace(), kCGImageAlphaNoneSkipFirst | kCGBitmapByteOrder32Host);
+  CGContextRef c=CGBitmapContextCreate(ALIGN_FBUF(buf),w,h,8,w*4,__GetDisplayColorSpace(), kCGImageAlphaNoneSkipFirst);
   if (!c)
   {
     free(buf);
@@ -223,7 +212,7 @@ HDC SWELL_CreateMemContext(HDC hdc, int w, int h)
 
   CGContextTranslateCTM(c,0.0,h);
   CGContextScaleCTM(c,1.0,-1.0);
-  CGContextSetAllowsFontSmoothing(c,0); // we may wish to enable this for some contexts eventually, but this is to match previous behavior
+
 
   HDC__ *ctx=SWELL_GDP_CTX_NEW();
   ctx->ctx=(CGContextRef)c;
@@ -652,6 +641,8 @@ HFONT CreateFont(int lfHeight, int lfWidth, int lfEscapement, int lfOrientation,
     font->ct_FontRef = (void*)CTFontCreateWithName((CFStringRef)SWELL_GetCachedFontName(buf),fontwid,NULL);
     if (!font->ct_FontRef) font->ct_FontRef = (void*)[[NSFont labelFontOfSize:fontwid] retain]; 
 
+    font->font_quality = (!lfQuality || lfQuality == ANTIALIASED_QUALITY || lfQuality == NONANTIALIASED_QUALITY ? lfQuality : 0);
+
     // might want to make this conditional (i.e. only return font if created successfully), but I think we'd rather fallback to a system font than use ATSUI
     return font;
   }
@@ -673,9 +664,19 @@ HFONT CreateFont(int lfHeight, int lfWidth, int lfEscapement, int lfOrientation,
     Boolean isItal=!!lfItalic;
     Boolean isUnder=!!lfUnderline;
     
-    ATSUAttributeTag        theTags[] = { kATSUQDBoldfaceTag, kATSUQDItalicTag, kATSUQDUnderlineTag,kATSUSizeTag,kATSUFontTag };
-    ByteCount               theSizes[] = { sizeof(Boolean),sizeof(Boolean),sizeof(Boolean), sizeof(Fixed),sizeof(ATSUFontID)  };
-    ATSUAttributeValuePtr   theValues[] =  {&isBold, &isItal, &isUnder,  &fsize, &fontid  } ;
+    ATSStyleRenderingOptions render;
+    if (!lfQuality)
+      render = kATSStyleNoOptions;
+    else if (lfQuality == ANTIALIASED_QUALITY)
+      render = kATSStyleApplyAntiAliasing;
+    else if (lfQuality == NONANTIALIASED_QUALITY)
+      render = kATSStyleNoAntiAliasing;
+    else
+      render = kATSStyleNoOptions;
+
+    ATSUAttributeTag        theTags[] = { kATSUQDBoldfaceTag, kATSUQDItalicTag, kATSUQDUnderlineTag,kATSUSizeTag,kATSUFontTag, kATSUStyleRenderingOptionsTag };
+    ByteCount               theSizes[] = { sizeof(Boolean),sizeof(Boolean),sizeof(Boolean), sizeof(Fixed),sizeof(ATSUFontID), sizeof(ATSStyleRenderingOptions)  };
+    ATSUAttributeValuePtr   theValues[] =  {&isBold, &isItal, &isUnder,  &fsize, &fontid, &render } ;
     
     int attrcnt=sizeof(theTags)/sizeof(theTags[0]);
     if (fontid == kATSUInvalidFontID) attrcnt--;    
@@ -1069,6 +1070,11 @@ int DrawText(HDC ctx, const char *buf, int buflen, RECT *r, int align)
       bgc = CreateColor(ct->curbkcol);
     }
 
+    if (ct->curfont->font_quality)
+    {
+      CGContextSetShouldAntialias(ct->ctx, ct->curfont->font_quality == ANTIALIASED_QUALITY);
+    }
+
     if (line) 
     {
       if (bgc)
@@ -1119,23 +1125,8 @@ int DrawText(HDC ctx, const char *buf, int buflen, RECT *r, int align)
   [str release];
   return 0;  
 }
-
-
-int GetGlyphIndicesW(HDC ctx, wchar_t *buf, int len, unsigned short *indices, int flags)
-{
-  HDC__ *ct=(HDC__*)ctx;
-  if (HDC_VALID(ct) && HGDIOBJ_VALID(ct->curfont, TYPE_FONT))
-  {
-#ifndef SWELL_NO_CORETEXT
-    CTFontRef f=(CTFontRef)ct->curfont->ct_FontRef;
-    if (f && CTFontGetGlyphsForCharacters(f, (const UniChar*)buf, (CGGlyph*)indices, (CFIndex)len)) return len;
-#endif
-  }
+    
   
-  int i;
-  for (i=0; i < len; ++i) indices[i]=(flags == GGI_MARK_NONEXISTING_GLYPHS ? 0xFFFF : 0);
-  return 0;
-}
 
 
 
@@ -1222,9 +1213,6 @@ HICON LoadNamedImage(const char *name, bool alphaFromMask)
       [img drawInRect:NSMakeRect(0,0,w,h) fromRect:NSZeroRect operation:NSCompositeCopy fraction:1.0];
       [NSGraphicsContext restoreGraphicsState];
 
-      // on yosemite, calling [img TIFFRepresentation] seems to change img somehow for some images, ouch.
-      // in this case, we should always replace img with newImage (set rcnt=1), but in general
-      // maybe we shoulnt use alphaFromMask anyhow
       NSImage *newImage=[[NSImage alloc] initWithData:[img TIFFRepresentation]];
       [newImage setFlipped:YES];
 
@@ -1237,7 +1225,11 @@ HICON LoadNamedImage(const char *name, bool alphaFromMask)
         int x;
         for (x = 0; x < w; x++)
         {
+#ifdef __ppc__
           if ((*fb++ & 0xffffff) == 0xff00ff)
+#else
+          if ((*fb++ & 0xffffff00) == 0xff00ff00)
+#endif
           {
             CGContextClearRect(myContext,CGRectMake(x,y,1,1));
             rcnt++;
@@ -1352,6 +1344,131 @@ void BitBlt(HDC hdcOut, int x, int y, int w, int h, HDC hdcIn, int xin, int yin,
   StretchBlt(hdcOut,x,y,w,h,hdcIn,xin,yin,w,h,mode);
 }
 
+#ifndef __ppc__
+static void SWELL_fastDoubleUpImage(unsigned int *op, const unsigned int *ip, int w, int h, int sw, int newspan)
+{
+  int y = h;
+  while (y-->0)
+  {
+    const unsigned int *rd = ip;
+    unsigned int *wr = op;
+    int remaining = w;
+
+#if 0 // def __AVX__
+    // this isn't really any faster than SSE anyway
+    if (remaining >= 8)
+    {
+      if (!((INT_PTR)rd & 31))
+      {
+        int x = remaining/8;
+        while (x-->0)
+        {
+          const __m256 m =  _mm256_load_ps((const float *)rd);
+          rd+=8;
+          
+          const __m256 p1 = _mm256_permutevar_ps(_mm256_permute2f128_ps(m,m,0),_mm256_set_epi32(3,3,2,2,1,1,0,0));
+          const __m256 p2 = _mm256_permutevar_ps(_mm256_permute2f128_ps(m,m,1|(1<<4)),_mm256_set_epi32(3,3,2,2,1,1,0,0));
+          
+          unsigned int *wr2 = wr+newspan;
+          _mm256_store_ps((float*)wr,p1);
+          _mm256_store_ps((float*)wr2,p1);
+        
+          _mm256_store_ps((float*)wr + 8,p2);
+          _mm256_store_ps((float*)wr2 + 8,p2);
+          
+          wr += 16;
+        }
+        remaining &= 7;
+        
+      }
+    }
+#endif
+    
+#ifdef __SSE__
+    if (remaining >= 4)
+    {
+      // with SSE is about 2x faster than without
+      if (((INT_PTR)rd & 7))
+      {
+        // input isn't 8 byte aligned, must use unaligned reads
+        int x = remaining/4;
+        while (x-->0)
+        {
+          __m128 m =  _mm_loadu_ps((const float *)rd);
+          __m128 p1 = _mm_shuffle_ps(m,m,_MM_SHUFFLE(1,1,0,0));
+          __m128 p2 = _mm_shuffle_ps(m,m,_MM_SHUFFLE(3,3,2,2));
+          
+          unsigned int *wr2 = wr+newspan;
+          rd+=4;
+          
+          _mm_store_ps((float*)wr,p1);
+          _mm_store_ps((float*)wr2,p1);
+          
+          _mm_store_ps((float*)wr + 4,p2);
+          _mm_store_ps((float*)wr2 + 4,p2);
+          
+          wr += 8;
+        }
+      }
+      else
+      {
+        // if rd is 8 byte aligned, we can do SSE without unaligned reads
+        
+        // but if it is not 16 byte aligned, we need to preprocess a pair of pixels
+        // (advancing rd by 8 bytes, and wr by 16)
+      
+        if ((INT_PTR)rd & 15)
+        {
+          unsigned int *nwr = wr+newspan;
+          wr[0] = wr[1] = nwr[0] = nwr[1] = rd[0];
+          wr[2] = wr[3] = nwr[2] = nwr[3] = rd[1];
+          wr+=4;
+          rd+=2;
+          remaining-=2;
+        }
+        
+        int x = remaining/4;
+        while (x-->0)
+        {
+          __m128 m =  _mm_load_ps((const float *)rd);
+          __m128 p1 = _mm_shuffle_ps(m,m,_MM_SHUFFLE(1,1,0,0));
+          __m128 p2 = _mm_shuffle_ps(m,m,_MM_SHUFFLE(3,3,2,2));
+
+          unsigned int *wr2 = wr+newspan;
+          rd+=4;
+          
+          _mm_store_ps((float*)wr,p1);
+          _mm_store_ps((float*)wr2,p1);
+          
+          _mm_store_ps((float*)wr + 4,p2);
+          _mm_store_ps((float*)wr2 + 4,p2);
+
+          wr += 8;
+        }
+      }
+      remaining &= 3;
+    }
+#endif //__SSE__
+
+    int x = remaining/2;
+    while (x-->0)
+    {
+      unsigned int *nwr = wr+newspan;
+      wr[0] = wr[1] = nwr[0] = nwr[1] = rd[0];
+      wr[2] = wr[3] = nwr[2] = nwr[3] = rd[1];
+      rd+=2;
+      wr+=4;
+    }
+    if (remaining&1)
+    {
+      wr[0] = wr[1] = wr[newspan] = wr[newspan+1] = *rd;
+    }
+    ip += sw;
+    op += newspan*2;
+  }
+}
+#endif
+
 void StretchBlt(HDC hdcOut, int x, int y, int destw, int desth, HDC hdcIn, int xin, int yin, int w, int h, int mode)
 {
   if (!hdcOut || !hdcIn||w<1||h<1) return;
@@ -1417,9 +1534,10 @@ void StretchBlt(HDC hdcOut, int x, int y, int destw, int desth, HDC hdcIn, int x
     glBindTexture(GL_TEXTURE_RECTANGLE_EXT, texid);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, sw);
     glTexParameteri(GL_TEXTURE_RECTANGLE_EXT, GL_TEXTURE_MIN_FILTER,  GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_EXT,0,GL_RGBA8,w,h,0,GL_BGRA,GL_UNSIGNED_INT_8_8_8_8_REV, p);
+    glTexImage2D(GL_TEXTURE_RECTANGLE_EXT,0,GL_RGBA8,w,h,0,GL_BGRA,GL_UNSIGNED_INT_8_8_8_8, p);
     
-    glViewport(x,[[glCtx view] bounds].size.height-desth-y,destw,desth);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glViewport(x,[[glCtx view] bounds].size.height-h-y,w,h);
     glBegin(GL_QUADS);
     
     glTexCoord2f(0.0f, 0.0f);
@@ -1444,10 +1562,35 @@ void StretchBlt(HDC hdcOut, int x, int y, int destw, int desth, HDC hdcIn, int x
 #endif
   
   
+  // this is only faster when using the native color profile, it seems
+  WDL_HeapBuf *retina_hb = NULL;
+  unsigned char *retina_buf = NULL;
+#ifndef __ppc__
+  if (destw == w && desth == h && 
+      CGContextConvertSizeToDeviceSpace(output, CGSizeMake(1,1)).width > 1.9)
+  {
+    const int newspan = (w*2+3)&~3;
+    retina_hb = SWELL_GDP_GetTmpBuf();
+    if (retina_hb && retina_hb->ResizeOK(sizeof(unsigned int) * newspan*h*2 + 32,false))
+    {
+      retina_buf = (unsigned char *)retina_hb->Get();
+      const UINT_PTR align = (UINT_PTR)retina_buf & 31;
+      if (align) retina_buf += 32-align;
+
+      SWELL_fastDoubleUpImage((unsigned int *)retina_buf, 
+                        (const unsigned int *)p,w,h,sw,newspan);
+
+      sw = newspan;
+      w *= 2;
+      h *= 2;
+    }
+  }
+#endif
+
   
-  CGDataProviderRef provider = CGDataProviderCreateWithData(NULL,p,4*sw*h,NULL);
+  CGDataProviderRef provider = CGDataProviderCreateWithData(NULL,retina_buf ? retina_buf : p,4*sw*h,NULL);
   CGImageRef img = CGImageCreate(w,h,8,32,4*sw,__GetDisplayColorSpace(),
-      (use_alphachannel?kCGImageAlphaFirst:kCGImageAlphaNoneSkipFirst)|kCGBitmapByteOrder32Host,
+      use_alphachannel?kCGImageAlphaFirst:kCGImageAlphaNoneSkipFirst,
       provider,NULL,NO,kCGRenderingIntentDefault);
   CGDataProviderRelease(provider);
   
@@ -1462,6 +1605,7 @@ void StretchBlt(HDC hdcOut, int x, int y, int destw, int desth, HDC hdcIn, int x
   
     CGImageRelease(img);
   }
+  SWELL_GDP_DisposeTmpBuf(retina_hb);
 }
 
 void SWELL_PushClipRegion(HDC ctx)
@@ -1526,16 +1670,7 @@ HDC GetDC(HWND h)
       HDC ret= SWELL_CreateGfxContext([NSGraphicsContext currentContext]);
       if (ret)
       {
-        if ((ret)->ctx) CGContextSaveGState((ret)->ctx);
-        if ([(id)h isKindOfClass:[SWELL_hwndChild class]])
-        {
-          SWELL_hwndChild *view = (SWELL_hwndChild*)h;
-          if (!ret->GLgfxctx) 
-          {
-            ret->GLgfxctx = view->m_glctx;
-            if (view->m_glctx) [view->m_glctx setView:view];
-          }
-        }
+         if ((ret)->ctx) CGContextSaveGState((ret)->ctx);
       }
       return ret;
     }
@@ -1589,11 +1724,6 @@ void ReleaseDC(HWND h, HDC hdc)
       if (ps.hdc && ps.hdc==hdc) return;
     }
   }    
-  if (hdc && hdc->GLgfxctx)
-  {
-    if ([NSOpenGLContext currentContext] == hdc->GLgfxctx) [NSOpenGLContext clearCurrentContext]; 
-    hdc->GLgfxctx = NULL;
-  }
     
   if (hdc) SWELL_DeleteGfxContext(hdc);
   if (isView && hdc)
@@ -1644,23 +1774,7 @@ HBITMAP CreateBitmap(int width, int height, int numplanes, int bitsperpixel, uns
   int y;
   for (y=0;y<height;y ++)
   {
-#ifdef __ppc__
     memcpy(p,bits,width*4);
-#else
-    unsigned char *wr = p;
-    const unsigned char *rd = bits;
-    int x = width;
-    // convert BGRA to ARGB
-    while (x--)
-    {
-      wr[0] = rd[3];
-      wr[1] = rd[2];
-      wr[2] = rd[1];
-      wr[3] = rd[0];
-      wr+=4;
-      rd+=4;
-    }
-#endif
     p+=pspan;
     bits += width*4;
   }

@@ -472,12 +472,12 @@ void Ellipse(HDC ctx, int l, int t, int r, int b)
   r += c->surface_offs.x;
   b += c->surface_offs.y;
 
-  int rad = wdl_min(r-l, b-t)/2; // todo: actual ellipse, for now just circles
+  int rad = min(r-l, b-t)/2; // todo: actual ellipse, for now just circles
 
   bool wantPen = HGDIOBJ_VALID(c->curpen,TYPE_PEN) && c->curpen->wid >= 0;
   if (HGDIOBJ_VALID(c->curbrush,TYPE_BRUSH) && c->curbrush->wid >= 0)
   {
-    int use_rad = rad;
+    int use_rad = wantPen ? rad-1 : rad;
     if (use_rad > 0) LICE_FillCircle(c->surface,l+use_rad,t+use_rad,use_rad,c->curbrush->color,c->curbrush->alpha,LICE_BLIT_MODE_COPY,!wantPen);
   }
   if (wantPen)
@@ -1338,7 +1338,6 @@ void SWELL_internalLICEpaint(HWND hwnd, LICE_IBitmap *bmout, int bmout_xpos, int
     }
   }
 
-  bool okToClearChild=true;
   if (forceref || hwnd->m_child_invalidated)
   {
     HWND h = hwnd->m_children;
@@ -1350,11 +1349,6 @@ void SWELL_internalLICEpaint(HWND hwnd, LICE_IBitmap *bmout, int bmout_xpos, int
         int width = h->m_position.right - h->m_position.left, height = h->m_position.bottom - h->m_position.top; // max width possible for this window
         int xp = h->m_position.left - bmout_xpos, yp = h->m_position.top - bmout_ypos;
 
-        if (okToClearChild && !forceref)
-        {
-          if (xp < 0 || xp+width > bmout->getWidth() ||
-              yp < 0 || yp+height > bmout->getHeight()) okToClearChild = false; // extends outside of our region
-        }
         // if xp/yp < 0, that means that the clip region starts inside the window, so we need to pass a positive render offset, and decrease the potential draw width
         // if xp/yp > 0, then the clip region starts before the window, so we use the subbitmap and pass 0 for the offset parm
         int subx = 0, suby=0;
@@ -1371,7 +1365,7 @@ void SWELL_internalLICEpaint(HWND hwnd, LICE_IBitmap *bmout, int bmout_xpos, int
       h = h->m_prev;
     }
   }
-  if (okToClearChild) hwnd->m_child_invalidated=false;
+  hwnd->m_child_invalidated=false;
 }
 
 HBITMAP CreateBitmap(int width, int height, int numplanes, int bitsperpixel, unsigned char* bits)
@@ -1519,14 +1513,6 @@ int AddFontResourceEx(LPCTSTR str, DWORD fl, void *pdv)
     s_freetype_regfonts.InsertSorted(strdup(str), sortByFilePart);
     return 1;
   } 
-  return 0;
-}
-
-int GetGlyphIndicesW(HDC ctx, wchar_t *buf, int len, unsigned short *indices, int flags)
-{
-  // todo: freetype query font etc
-  int i;
-  for (i=0; i < len; ++i) indices[i]=(flags == GGI_MARK_NONEXISTING_GLYPHS ? 0xFFFF : 0);
   return 0;
 }
 
