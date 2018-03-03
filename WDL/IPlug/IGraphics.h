@@ -219,6 +219,9 @@ public:
 	void OnMouseWheel(int x, int y, IMouseMod* pMod, int d);
 	bool OnKeyDown(int x, int y, int key);
 
+	enum ECursor { ARROW, IBEAM, WAIT, CROSS, UPARROW, SIZENWSE, SIZENESW, SIZEWE, SIZENS, SIZEALL, INO, HAND, APPSTARTING, HELP };
+
+	virtual void SetMouseCursor(ECursor cursor) {};
 	virtual void HideMouseCursor() {};
 	virtual void ShowMouseCursor() {};
 

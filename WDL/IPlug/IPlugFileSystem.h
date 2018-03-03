@@ -7,12 +7,6 @@
 #include <fstream>
 #include <sys/stat.h>
 
-// for windows mkdir
-#ifdef _WIN32
-#include <direct.h>
-#include <Shlwapi.h>
-#endif
-
 #include "UTF_Helper.h"
 
 using namespace std;

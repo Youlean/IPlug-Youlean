@@ -87,6 +87,8 @@ public:
     void ResizePluginView(int w, int h, bool resizeSuperView = false);
     void ResizeWindowContainingPlugin(int w, int h);
     
+    void SetMouseCursor(ECursor cursor);
+    
     void HideMouseCursor();
     void ShowMouseCursor();
     

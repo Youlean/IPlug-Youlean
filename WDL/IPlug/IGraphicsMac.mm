@@ -577,6 +577,20 @@ void IGraphicsMac::Resize(int w, int h)
         }
 }
 
+void IGraphicsMac::SetMouseCursor(ECursor cursor)
+{
+    if (mGraphicsCocoa)
+    {
+        [(IGRAPHICS_COCOA*) mGraphicsCocoa SetMouseCursor: cursor];
+    }
+#ifndef IPLUG_NO_CARBON_SUPPORT
+    else if (mGraphicsCarbon)
+    {
+        // TODO
+    }
+#endif
+}
+
 void IGraphicsMac::HideMouseCursor()
 {
     if (!mCursorHidden)

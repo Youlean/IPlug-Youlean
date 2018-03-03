@@ -84,6 +84,8 @@ NSString* ToNSString(const char* cStr);
   IControl* mEdControl; // the control linked to the open text edit
   IParam* mEdParam; // the param linked to the open text edit (optional)
   int mPrevX, mPrevY;
+  NSTrackingArea *trackingArea;
+    
 @public
   IGraphicsMac* mGraphics;
 }
@@ -103,15 +105,20 @@ NSString* ToNSString(const char* cStr);
 - (void) rightMouseUp: (NSEvent*) pEvent;
 - (void) rightMouseDragged: (NSEvent*) pEvent;
 - (void) mouseMoved: (NSEvent*) pEvent;
+- (void) updateTrackingAreas;
+- (void) mouseExited:(NSEvent*) pEvent;
 - (void) scrollWheel: (NSEvent*) pEvent;
 - (void) keyDown: (NSEvent *)pEvent;
 - (void) killTimer;
 - (void) removeFromSuperview;
 //- (void) controlTextDidChange: (NSNotification *) aNotification;
+- (void) SetMouseCursor: (IGraphicsMac::ECursor) cursor;
 - (void) controlTextDidEndEditing: (NSNotification*) aNotification;
 - (IPopupMenu*) createIPopupMenu: (IPopupMenu*) pMenu : (NSRect) rect;
 - (void) createTextEntry: (IControl*) pControl : (IParam*) pParam : (IText*) pText : (const char*) pString : (NSRect) areaRect;
 - (void) endUserInput;
 - (NSString*) view: (NSView*) pView stringForToolTip: (NSToolTipTag) tag point: (NSPoint) point userData: (void*) pData;
 - (void) registerToolTip: (IRECT*) pRECT;
+
+@property (nonatomic, retain) NSTrackingArea *trackingArea;
 @end

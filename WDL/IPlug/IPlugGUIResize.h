@@ -82,6 +82,8 @@ Normal View:               Normal View - Scaled 2X:
 #include <cmath> 
 #include "IGraphics.h"
 #include "IControl.h"
+#include "IPlugConfigFile.h"
+#include "IPlugFileSystem.h"
 
 using namespace std;
 
@@ -290,6 +292,9 @@ private:
 	void OnMouseUp(int x, int y, IMouseMod* pMod);
 	// ---------------------------------------------------------------------------------------------------------------------------------------------
 
+	IPlugConfigFile configFile;
+	IPlugFileSystem fileSystem;
+
     int mouse_down_x = 0;
     int mouse_down_y = 0;
 
@@ -336,7 +341,6 @@ private:
 	double* backup_parameters;
 	IRECT gui_resize_area;
 	WDL_String settings_ini_path;
-	char buf[128]; // temp buffer for writing integers to profile strings
 	resizeOneSide one_side_flag;
 	WDL_PtrList<IParam> guiResizeParameters;
 

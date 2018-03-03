@@ -53,7 +53,7 @@ public:
 		{
 			mouseClickedOnResizeHandle = true;
 			// Change mouse cursor to better represent control resizing
-			SetCursor(LoadCursor(NULL, IDC_SIZENWSE));
+			mGraphics->SetMouseCursor(IGraphics::ECursor::SIZENWSE);
 		}
 
 		mouseDownX = x;
@@ -65,14 +65,14 @@ public:
 		mouseIsDragging = false;
 		mouseClickedOnResizeHandle = false;
 		// Return to normal mouse cursor
-		SetCursor(LoadCursor(NULL, IDC_ARROW));
+		mGraphics->SetMouseCursor(IGraphics::ECursor::ARROW);
 	}
 
 	void OnMouseOver(int x, int y, IMouseMod* pMod)
 	{
 		// Change mouse cursor to better represent control resizing
-		if (IsMouseOverHandle(x, y)) SetCursor(LoadCursor(NULL, IDC_SIZENWSE));
-		else if (!mouseClickedOnResizeHandle) SetCursor(LoadCursor(NULL, IDC_ARROW));
+		if (IsMouseOverHandle(x, y)) 	mGraphics->SetMouseCursor(IGraphics::ECursor::SIZENWSE);
+		else if (!mouseClickedOnResizeHandle) 	mGraphics->SetMouseCursor(IGraphics::ECursor::ARROW);
 	}
 
 	void OnMouseDrag(int x, int y, int dX, int dY, IMouseMod* pMod)

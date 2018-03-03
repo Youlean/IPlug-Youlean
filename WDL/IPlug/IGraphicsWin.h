@@ -19,6 +19,7 @@ public:
 
   void Resize(int w, int h);
 
+  void SetMouseCursor(ECursor cursor);
   void HideMouseCursor();
   void ShowMouseCursor();
   int ShowMessageBox(const char* pText, const char* pCaption, int type);

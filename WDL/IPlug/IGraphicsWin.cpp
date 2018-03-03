@@ -622,6 +622,58 @@ void IGraphicsWin::Resize(int w, int h)
 #endif // !AAX_API
 }
 
+void IGraphicsWin::SetMouseCursor(ECursor cursor)
+{
+	switch (cursor)
+	{
+	case IGraphicsWin::ARROW:
+		SetCursor(LoadCursor(NULL, IDC_ARROW));
+		break;
+	case IGraphicsWin::IBEAM:
+		SetCursor(LoadCursor(NULL, IDC_IBEAM));
+		break;
+	case IGraphicsWin::WAIT:
+		SetCursor(LoadCursor(NULL, IDC_WAIT));
+		break;
+	case IGraphicsWin::CROSS:
+		SetCursor(LoadCursor(NULL, IDC_CROSS));
+		break;
+	case IGraphicsWin::UPARROW:
+		SetCursor(LoadCursor(NULL, IDC_UPARROW));
+		break;
+	case IGraphicsWin::SIZENWSE:
+		SetCursor(LoadCursor(NULL, IDC_SIZENWSE));
+		break;
+	case IGraphicsWin::SIZENESW:
+		SetCursor(LoadCursor(NULL, IDC_SIZENESW));
+		break;
+	case IGraphicsWin::SIZEWE:
+		SetCursor(LoadCursor(NULL, IDC_SIZEWE));
+		break;
+	case IGraphicsWin::SIZENS:
+		SetCursor(LoadCursor(NULL, IDC_SIZENS));
+		break;
+	case IGraphicsWin::SIZEALL:
+		SetCursor(LoadCursor(NULL, IDC_SIZEALL));
+		break;
+	case IGraphicsWin::INO:
+		SetCursor(LoadCursor(NULL, IDC_NO));
+		break;
+	case IGraphicsWin::HAND:
+		SetCursor(LoadCursor(NULL, IDC_HAND));
+		break;
+	case IGraphicsWin::APPSTARTING:
+		SetCursor(LoadCursor(NULL, IDC_APPSTARTING));
+		break;
+	case IGraphicsWin::HELP:
+		SetCursor(LoadCursor(NULL, IDC_HELP));
+		break;
+	default:
+		SetCursor(LoadCursor(NULL, IDC_ARROW));
+		break;
+	}
+}
+
 void IGraphicsWin::HideMouseCursor()
 {
   if (!mCursorHidden)

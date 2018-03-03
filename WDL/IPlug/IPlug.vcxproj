@@ -261,6 +261,7 @@
     <ClCompile Include="IParam.cpp" />
     <ClCompile Include="IPlugBase.cpp" />
     <ClCompile Include="IPlugConfigFile.cpp" />
+    <ClCompile Include="IPlugFileSystem.cpp" />
     <ClCompile Include="IPlugGUILiveEdit.cpp" />
     <ClCompile Include="IPlugGUIResize.cpp" />
     <ClCompile Include="IPlugStructs.cpp" />
@@ -268,6 +269,7 @@
     <ClCompile Include="Log.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\YCAIRO\nanosvg.h" />
     <ClInclude Include="..\..\YCAIRO\ycairo.h" />
     <ClInclude Include="Containers.h" />
     <ClInclude Include="Hosts.h" />
@@ -279,6 +281,7 @@
     <ClInclude Include="IParam.h" />
     <ClInclude Include="IPlugBase.h" />
     <ClInclude Include="IPlugConfigFile.h" />
+    <ClInclude Include="IPlugFileSystem.h" />
     <ClInclude Include="IPlugGUILiveEdit.h" />
     <ClInclude Include="IPlugGUIResize.h" />
     <ClInclude Include="IPlugOSDetect.h" />

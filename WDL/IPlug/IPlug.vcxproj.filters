@@ -16,6 +16,7 @@
     <ClCompile Include="IPlugGUILiveEdit.cpp" />
     <ClCompile Include="IControlGroup.cpp" />
     <ClCompile Include="IPlugConfigFile.cpp" />
+    <ClCompile Include="IPlugFileSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Containers.h" />
@@ -36,5 +37,7 @@
     <ClInclude Include="IControlGroup.h" />
     <ClInclude Include="IPlugConfigFile.h" />
     <ClInclude Include="UTF_Helper.h" />
+    <ClInclude Include="..\..\YCAIRO\nanosvg.h" />
+    <ClInclude Include="IPlugFileSystem.h" />
   </ItemGroup>
 </Project>
