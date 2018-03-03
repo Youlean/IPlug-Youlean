@@ -1,5 +1,9 @@
 #include "ycairo.h"
 
+#define NANOSVG_ALL_COLOR_KEYWORDS	// Include full list of color keywords.
+#define NANOSVG_IMPLEMENTATION		// Expands implementation
+#include "nanosvg.h"
+
 // ycairo_background ------------------------------------------------------------------------------------------------------------------------------------
 ycairo_background::ycairo_background(IPlugBase * pPlug, ycairo_base * ycairo_base, IGraphics * pGraphics, double red, double green, double blue)
 	: IControl(pPlug, IRECT(0, 0, pGraphics->Width(), pGraphics->Height()))
@@ -1351,4 +1355,102 @@ void ycairo_drop_shadow::ycairo_drop_shadow_stroke_fast(cairo_t * cr)
 {
 	_ycairo_draw_drop_shadow_fast(cr, true);
 	cairo_new_path(cr);
+}
+
+
+// NanoSVG stuff
+void setSource(cairo_t * cr, const NSVGpaint & paint, double opacity)
+{
+	switch (paint.type)
+	{
+	case NSVG_PAINT_COLOR:
+	{
+		double r = ((paint.color >> 0) & 0xFF) / 255.0;
+		double g = ((paint.color >> 8) & 0xFF) / 255.0;
+		double b = ((paint.color >> 16) & 0xFF) / 255.0;
+		cairo_set_source_rgba(cr, r, g, b, opacity);
+		break;
+	}
+	//case NSVG_PAINT_LINEAR_GRADIENT:
+	//case NSVG_PAINT_RADIAL_GRADIENT:
+
+	default:
+		cairo_set_source_rgba(cr, 0, 0, 0, opacity);
+	}
+}
+
+void RenderNanoSVG(cairo_t * cr, NSVGimage * image)
+{
+	for (NSVGshape* shape = image->shapes; shape; shape = shape->next)
+	{
+		if (!(shape->flags & NSVG_FLAGS_VISIBLE))
+			continue;
+
+		for (NSVGpath* path = shape->paths; path; path = path->next)
+		{
+			cairo_move_to(cr, path->pts[0], path->pts[1]);
+
+			for (int i = 0; i < path->npts - 1; i += 3)
+			{
+				float* p = path->pts + i * 2 + 2;
+				cairo_curve_to(cr, p[0], p[1], p[2], p[3], p[4], p[5]);
+			}
+
+			if (path->closed)
+				cairo_close_path(cr);
+		}
+
+		// Fill
+		if (shape->fill.type != NSVG_PAINT_NONE)
+		{
+			if (shape->fillRule == NSVG_FILLRULE_EVENODD)
+				cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+			else
+				cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+			setSource(cr, shape->fill, shape->opacity);
+
+			if (shape->stroke.type != NSVG_PAINT_NONE)
+				cairo_fill_preserve(cr);
+			else
+				cairo_fill(cr);
+		}
+
+		// Stroke
+		if (shape->stroke.type != NSVG_PAINT_NONE)
+		{
+			cairo_set_line_width(cr, shape->strokeWidth);
+			cairo_set_miter_limit(cr, shape->miterLimit);
+
+			switch (shape->strokeLineCap)
+			{
+			case NSVG_CAP_BUTT:  cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);  break;
+			case NSVG_CAP_ROUND: cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);  break;
+			case NSVG_CAP_SQUARE: cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE); break;
+			}
+
+			switch (shape->strokeLineJoin)
+			{
+			case NSVG_JOIN_MITER:  cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);  break;
+			case NSVG_JOIN_ROUND:  cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);  break;
+			case NSVG_JOIN_BEVEL:  cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL); break;
+			}
+
+			double dashArray[8];
+
+			for (int i = 0; i < shape->strokeDashCount; i++)
+				dashArray[i] = shape->strokeDashArray[i];
+
+			cairo_set_dash(cr, dashArray, shape->strokeDashCount, shape->strokeDashOffset);
+
+			setSource(cr, shape->stroke, shape->opacity);
+			cairo_stroke(cr);
+		}
+	}
+}
+
+void ycairo_helper::ycairo_draw_svg(cairo_t * cr, string path)
+{
+	NSVGimage *SVG = nsvgParseFromFile(path.c_str(), "px", 96);
+	RenderNanoSVG(cr, SVG);
+	nsvgDelete(SVG);
 }

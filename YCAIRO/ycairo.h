@@ -58,6 +58,8 @@
 #include <math.h>
 #include "../WDL/IPlug/IControl.h"
 
+
+
 typedef enum _ycairo_text_w_aligement { YCAIRO_TEXT_W_ALIGN_LEFT, YCAIRO_TEXT_W_ALIGN_RIGHT, YCAIRO_TEXT_W_ALIGN_CENTER } ycairo_text_w_aligement;
 typedef enum _ycairo_text_h_aligement { YCAIRO_TEXT_H_ALIGN_CENTER, YCAIRO_TEXT_H_ALIGN_TOP, YCAIRO_TEXT_H_ALIGN_BOTTOM } ycairo_text_h_aligement;
 
@@ -223,6 +225,8 @@ public:
 	void ycairo_set_source_rgba_fast(cairo_t *cr, IColor *color);
 
 	void ycairo_reset_clip_to(cairo_t *cr, IRECT rect);
+
+	void ycairo_draw_svg(cairo_t* cr, string path);
 };
 
 class ycairo_text
@@ -266,7 +270,7 @@ public:
 private:
 	void CreateTextLinesVector(cairo_t *cr, DRECT rect);
 
-		vector<double> multiLinecharSize;
+	vector<double> multiLinecharSize;
 	vector<int> charType;
 
 	string single_line_text = "";
