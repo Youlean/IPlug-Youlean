@@ -507,6 +507,11 @@ struct DRECT
 	{
 		return (!Empty() && x >= L && x < R && y >= T && y < B);
 	}
+
+	inline bool Intersects(DRECT* pRHS)
+	{
+		return (!Empty() && !pRHS->Empty() && R >= pRHS->L && L < pRHS->R && B >= pRHS->T && T < pRHS->B);
+	}
 };
 
 struct IMouseMod
