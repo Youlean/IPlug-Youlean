@@ -726,10 +726,32 @@ void ycairo_text::ycairo_show_text(cairo_t * cr, const char * text, double size,
 	//cairo_set_font_options(cr, options);
 	//// -----------------------------------------------------------------------
 
-	cairo_show_text(cr, text);
+	ycairo_show_text(cr);
 
 	ycairo_destroy_font_face();
 }
+
+void ycairo_text::ycairo_text_path(cairo_t * cr, const char * text, double size, IRECT rect, ycairo_text_w_aligement w_aligement, ycairo_text_h_aligement h_aligement)
+{
+
+	ycairo_initialize_font_face(cr);
+	cairo_set_font_size(cr, size);
+	ycairo_set_text(cr, text);
+	ycairo_set_text_position(cr, rect, w_aligement, h_aligement);
+
+	//// Adding subpixel rendering improves rendering speed by 10% on my system
+	//cairo_font_options_t *options;
+	//cairo_get_font_options(cr, options);
+
+	//cairo_font_options_set_antialias(options, CAIRO_ANTIALIAS_SUBPIXEL);
+	//cairo_set_font_options(cr, options);
+	//// -----------------------------------------------------------------------
+
+	ycairo_text_path(cr);
+
+	ycairo_destroy_font_face();
+}
+
 
 void ycairo_text::ycairo_show_multiline_text(cairo_t * cr, const string &text, double size, IColor color, IRECT rect, ycairo_text_w_aligement w_aligement, ycairo_text_h_aligement h_aligement)
 {
@@ -744,9 +766,25 @@ void ycairo_text::ycairo_show_multiline_text(cairo_t * cr, const string &text, d
 	ycairo_destroy_font_face();
 }
 
+void ycairo_text::ycairo_multiline_text_path(cairo_t * cr, const string &text, double size, IRECT rect, ycairo_text_w_aligement w_aligement, ycairo_text_h_aligement h_aligement)
+{
+	ycairo_initialize_font_face(cr);
+	cairo_set_font_size(cr, size);
+	ycairo_set_multiline_text(cr, text);
+	ycairo_set_multiline_text_position(cr, rect, w_aligement, h_aligement);
+	ycairo_multiline_text_path(cr);
+
+	ycairo_destroy_font_face();
+}
+
 void ycairo_text::ycairo_show_text(cairo_t * cr, const string &text, double size, IColor color, IRECT rect, ycairo_text_w_aligement w_aligement, ycairo_text_h_aligement h_aligement)
 {
 	ycairo_show_text(cr, text.c_str(), size, color, rect, w_aligement, h_aligement);
+}
+
+void ycairo_text::ycairo_text_path(cairo_t * cr, const string &text, double size, IRECT rect, ycairo_text_w_aligement w_aligement, ycairo_text_h_aligement h_aligement)
+{
+	ycairo_text_path(cr, text.c_str(), size, rect, w_aligement, h_aligement);
 }
 
 void ycairo_text::ycairo_show_multiline_text(cairo_t * cr)
@@ -809,9 +847,74 @@ void ycairo_text::ycairo_show_multiline_text(cairo_t * cr)
 	}
 }
 
+void ycairo_text::ycairo_multiline_text_path(cairo_t * cr)
+{
+	cairo_font_extents(cr, font_extents);
+
+	double fontHeight = font_extents->height;
+	int lineNumber = text_lines.size();
+
+	switch (multiline_height_aligement)
+	{
+	case YCAIRO_TEXT_H_ALIGN_TOP:
+	{
+		for (int i = 0; i < lineNumber; i++)
+		{
+			DRECT textRect = multiline_text_rect;
+			textRect.B = multiline_text_rect.T + (i + 1) * fontHeight;
+			textRect.T = textRect.B - fontHeight;
+
+			ycairo_set_text(cr, text_lines[i]);
+			ycairo_set_text_position(cr, textRect, multiline_width_aligement, ycairo_text_h_aligement::YCAIRO_TEXT_H_ALIGN_CENTER);
+			cairo_text_path(cr, text_lines[i].c_str());
+		}
+		break;
+	}
+	case YCAIRO_TEXT_H_ALIGN_BOTTOM:
+	{
+		for (int i = 0; i < lineNumber; i++)
+		{
+			int indexInv = (lineNumber - 1) - i;
+
+			DRECT textRect = multiline_text_rect;
+			textRect.T = multiline_text_rect.B - (i + 1) * fontHeight;
+			textRect.B = textRect.T + fontHeight;
+
+			ycairo_set_text(cr, text_lines[indexInv]);
+			ycairo_set_text_position(cr, textRect, multiline_width_aligement, ycairo_text_h_aligement::YCAIRO_TEXT_H_ALIGN_CENTER);
+			cairo_text_path(cr, text_lines[indexInv].c_str());
+		}
+		break;
+	}
+	case YCAIRO_TEXT_H_ALIGN_CENTER:
+	{
+		for (int i = 0; i < lineNumber; i++)
+		{
+			double top = (multiline_text_rect.H() - lineNumber * fontHeight) / 2 + multiline_text_rect.T;
+
+			DRECT textRect = multiline_text_rect;
+			textRect.B = top + (i + 1) * fontHeight;
+			textRect.T = textRect.B - fontHeight;
+
+			ycairo_set_text(cr, text_lines[i]);
+			ycairo_set_text_position(cr, textRect, multiline_width_aligement, ycairo_text_h_aligement::YCAIRO_TEXT_H_ALIGN_CENTER);
+			cairo_text_path(cr, text_lines[i].c_str());
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
+
 void ycairo_text::ycairo_show_text(cairo_t * cr)
 {
 	cairo_show_text(cr, single_line_text.c_str());
+}
+
+void ycairo_text::ycairo_text_path(cairo_t * cr)
+{
+	cairo_text_path(cr, single_line_text.c_str());
 }
 
 void ycairo_text::CreateTextLinesVector(cairo_t * cr, DRECT rect)

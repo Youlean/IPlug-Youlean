@@ -224,6 +224,13 @@ public:
 	void ycairo_set_source_rgba_fast(cairo_t *cr, IColor color);
 	void ycairo_set_source_rgba_fast(cairo_t *cr, IColor *color);
 
+	void ycairo_rotate_around_point(cairo_t *cr, double x, double y, double angle)
+	{
+		cairo_translate(cr, x, y);
+		cairo_rotate(cr, angle);
+		cairo_translate(cr, -x, -y);
+	}
+
 	void ycairo_reset_clip_to(cairo_t *cr, IRECT rect);
 
 	void ycairo_draw_svg(cairo_t* cr, string path);
@@ -257,16 +264,27 @@ public:
 	void ycairo_show_text(cairo_t *cr, const char *text, double size, IColor color, IRECT rect,
 		ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_CENTER, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_CENTER);
 
+	void ycairo_text_path(cairo_t * cr, const char * text, double size, IRECT rect,
+		ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_CENTER, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_CENTER);
+
+	void ycairo_text_path(cairo_t * cr, const string & text, double size, IRECT rect,
+		ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_CENTER, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_CENTER);
+
 	void ycairo_show_multiline_text(cairo_t * cr, const string &text, double size, IColor color, IRECT rect, ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_LEFT, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_TOP);
+
+	void ycairo_multiline_text_path(cairo_t * cr, const string &text, double size, IRECT rect, ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_LEFT, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_TOP);
 
 	void ycairo_show_text(cairo_t *cr, const string &text, double size, IColor color, IRECT rect,
 		ycairo_text_w_aligement w_aligement = YCAIRO_TEXT_W_ALIGN_CENTER, ycairo_text_h_aligement h_aligement = YCAIRO_TEXT_H_ALIGN_CENTER);
 
 	void ycairo_show_multiline_text(cairo_t * cr);
 
-	void ycairo_show_text(cairo_t *cr);
-	
+	void ycairo_multiline_text_path(cairo_t * cr);
 
+	void ycairo_show_text(cairo_t *cr);
+
+	void ycairo_text_path(cairo_t * cr);
+	
 private:
 	void CreateTextLinesVector(cairo_t *cr, DRECT rect);
 
