@@ -182,6 +182,11 @@ public:
 	// This will create control group. This will allow you to easily move or hide/show multiple controls at once. You can have groups inside groups too.
 	IControlGroup* CreateControlGroup();
 
+	void StartDrawingFromControlIndex(int controlIndex)
+	{
+		startDrawingFromIndex = controlIndex;
+	}
+
 	void MoveControlLayers(int fromIndex, int toIndex);
 	void SwapControlLayers(int fromIndex, int toIndex);
 	void ReplaceControl(int Index, IControl * pControl);
@@ -317,6 +322,10 @@ private:
 	unsigned bitmapOversample = 1;
 	double guiScaleRatio = 1.0;
 	int viewMode = 0;
+
+	int startDrawingFromIndex = 0;
+
+	std::vector<IPlugAnimation*> animations;
 };
 
 

@@ -1105,12 +1105,11 @@ bool IGraphics::IsDirty(IRECT* pR)
 {
 	bool dirty = false;
 	int i, n = mControls.GetSize();
-	IControl** ppControl = mControls.GetList();
 	DRECT nonScaledDrawRECT; // TODO: Find a better way to detect dirty area
 
-	for (i = 0; i < n; ++i, ++ppControl)
+	for (i = startDrawingFromIndex; i < n; ++i)
 	{
-		IControl* pControl = *ppControl;
+		IControl* pControl = mControls.Get(i);
 
 		if (mPlug->GetGUIResize())
 		{
@@ -1194,10 +1193,9 @@ bool IGraphics::Draw(IRECT* pR)
 	{
 		mDrawRECT = *pR;
 		int n = mControls.GetSize();
-		IControl** ppControl = mControls.GetList();
-		for (int i = 0; i < n; ++i, ++ppControl)
+		for (int i = startDrawingFromIndex; i < n; ++i)
 		{
-			IControl* pControl = *ppControl;
+			IControl* pControl = mControls.Get(i);
 			if (!(pControl->IsHidden()) && pR->Intersects(pControl->GetDrawRECT()))
 			{
 				pControl->Draw(this);
@@ -1211,7 +1209,7 @@ bool IGraphics::Draw(IRECT* pR)
 		if (pBG->IsDirty())   // Special case when everything needs to be drawn.
 		{
 			mDrawRECT = *(pBG->GetDrawRECT());
-			for (int j = 0; j < n; ++j)
+			for (int j = startDrawingFromIndex; j < n; ++j)
 			{
 				IControl* pControl2 = mControls.Get(j);
 				if (!j || !(pControl2->IsHidden()))
@@ -1223,7 +1221,7 @@ bool IGraphics::Draw(IRECT* pR)
 		}
 		else
 		{
-			for (i = 1; i < n; ++i)   // loop through all controls starting from one (not bg)
+			for (i = IPMAX(startDrawingFromIndex, 1); i < n; ++i)   // loop through all controls starting from one (not bg)
 			{
 				IControl* pControl = mControls.Get(i); // assign control i to pControl
 				if (pControl->IsDirty())   // if pControl is dirty
@@ -1232,7 +1230,7 @@ bool IGraphics::Draw(IRECT* pR)
 					// printf("control %i is Dirty\n", i);
 
 					mDrawRECT = *(pControl->GetDrawRECT()); // put the rect in the mDrawRect member variable
-					for (j = 0; j < n; ++j)   // loop through all controls
+					for (j = startDrawingFromIndex; j < n; ++j)   // loop through all controls
 					{
 						IControl* pControl2 = mControls.Get(j); // assign control j to pControl2
 
@@ -1257,7 +1255,7 @@ bool IGraphics::Draw(IRECT* pR)
 		int controlSize = mControls.GetSize();
 		if (mPlug->GetGUIResize()) controlSize -= 3;
 
-		for (int j = 1; j < controlSize; j++)
+		for (int j = IPMAX(startDrawingFromIndex, 1); j < controlSize; j++)
 		{
 			IControl* pControl = mControls.Get(j);
 
