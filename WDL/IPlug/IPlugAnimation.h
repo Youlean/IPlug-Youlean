@@ -44,7 +44,7 @@ See easing curves here: http://easings.net/
 
 using namespace std;
 
-typedef enum animationType
+enum animationType
 {
 	LinearEase,
 
@@ -108,66 +108,244 @@ public:
 		return p;
 	}
 
-	double QuadraticEaseIn(double p);
+	inline double QuadraticEaseIn(double p)
+	{
+		return p * p;
+	}
 
-	double QuadraticEaseOut(double p);
+	inline double QuadraticEaseOut(double p)
+	{
+		return -(p * (p - 2));
+	}
 
-	double QuadraticEaseInOut(double p);
+	inline double QuadraticEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 2 * p * p;
+		}
+		else
+		{
+			return (-2 * p * p) + (4 * p) - 1;
+		}
+	}
 
-	double CubicEaseIn(double p);
+	inline double CubicEaseIn(double p)
+	{
+		return p * p * p;
+	}
 
-	double CubicEaseOut(double p);
+	inline double CubicEaseOut(double p)
+	{
+		double f = (p - 1);
+		return f * f * f + 1;
+	}
 
-	double CubicEaseInOut(double p);
+	inline double CubicEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 4 * p * p * p;
+		}
+		else
+		{
+			double f = ((2 * p) - 2);
+			return 0.5 * f * f * f + 1;
+		}
+	}
 
-	double QuarticEaseIn(double p);
+	inline double QuarticEaseIn(double p)
+	{
+		return p * p * p * p;
+	}
 
-	double QuarticEaseOut(double p);
+	inline double QuarticEaseOut(double p)
+	{
+		double f = (p - 1);
+		return f * f * f * (1 - p) + 1;
+	}
 
-	double QuarticEaseInOut(double p);
+	inline double QuarticEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 8 * p * p * p * p;
+		}
+		else
+		{
+			double f = (p - 1);
+			return -8 * f * f * f * f + 1;
+		}
+	}
 
-	double QuinticEaseIn(double p);
+	inline double QuinticEaseIn(double p)
+	{
+		return p * p * p * p * p;
+	}
 
-	double QuinticEaseOut(double p);
+	inline double QuinticEaseOut(double p)
+	{
+		double f = (p - 1);
+		return f * f * f * f * f + 1;
+	}
 
-	double QuinticEaseInOut(double p);
+	inline double QuinticEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 16 * p * p * p * p * p;
+		}
+		else
+		{
+			double f = ((2 * p) - 2);
+			return  0.5 * f * f * f * f * f + 1;
+		}
+	}
 
-	double SineEaseIn(double p);
+	inline double SineEaseIn(double p)
+	{
+		return sin((p - 1) * M_PI_2) + 1;
+	}
 
-	double SineEaseOut(double p);
+	inline double SineEaseOut(double p)
+	{
+		return sin(p * M_PI_2);
+	}
 
-	double SineEaseInOut(double p);
+	inline double SineEaseInOut(double p)
+	{
+		return 0.5 * (1 - cos(p * M_PI));
+	}
 
-	double CircularEaseIn(double p);
+	inline double CircularEaseIn(double p)
+	{
+		return 1 - sqrt(1 - (p * p));
+	}
 
-	double CircularEaseOut(double p);
+	inline double CircularEaseOut(double p)
+	{
+		return sqrt((2 - p) * p);
+	}
 
-	double CircularEaseInOut(double p);
+	inline double CircularEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 0.5 * (1 - sqrt(1 - 4 * (p * p)));
+		}
+		else
+		{
+			return 0.5 * (sqrt(-((2 * p) - 3) * ((2 * p) - 1)) + 1);
+		}
+	}
 
-	double ExponentialEaseIn(double p);
+	inline double ExponentialEaseIn(double p)
+	{
+		return (p == 0.0) ? p : pow(2, 10 * (p - 1));
+	}
 
-	double ExponentialEaseOut(double p);
+	inline double ExponentialEaseOut(double p)
+	{
+		return (p == 1.0) ? p : 1 - pow(2, -10 * p);
+	}
 
-	double ExponentialEaseInOut(double p);
+	inline double ExponentialEaseInOut(double p)
+	{
+		if (p == 0.0 || p == 1.0) return p;
 
-	double ElasticEaseIn(double p);
+		if (p < 0.5)
+		{
+			return 0.5 * pow(2, (20 * p) - 10);
+		}
+		else
+		{
+			return -0.5 * pow(2, (-20 * p) + 10) + 1;
+		}
+	}
 
-	double ElasticEaseOut(double p);
+	inline double ElasticEaseIn(double p)
+	{
+		return sin(13 * M_PI_2 * p) * pow(2, 10 * (p - 1));
+	}
 
-	double ElasticEaseInOut(double p);
+	inline double ElasticEaseOut(double p)
+	{
+		return sin(-13 * M_PI_2 * (p + 1)) * pow(2, -10 * p) + 1;
+	}
 
-	double BackEaseIn(double p);
+	inline double ElasticEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 0.5 * sin(13 * M_PI_2 * (2 * p)) * pow(2, 10 * ((2 * p) - 1));
+		}
+		else
+		{
+			return 0.5 * (sin(-13 * M_PI_2 * ((2 * p - 1) + 1)) * pow(2, -10 * (2 * p - 1)) + 2);
+		}
+	}
 
-	double BackEaseOut(double p);
+	inline double BackEaseIn(double p)
+	{
+		return p * p * p - p * sin(p * M_PI);
+	}
 
-	double BackEaseInOut(double p);
+	inline double BackEaseOut(double p)
+	{
+		double f = (1 - p);
+		return 1 - (f * f * f - f * sin(f * M_PI));
+	}
 
-	double BounceEaseIn(double p);
+	inline double BackEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			double f = 2 * p;
+			return 0.5 * (f * f * f - f * sin(f * M_PI));
+		}
+		else
+		{
+			double f = (1 - (2 * p - 1));
+			return 0.5 * (1 - (f * f * f - f * sin(f * M_PI))) + 0.5;
+		}
+	}
 
-	double BounceEaseOut(double p);
+	inline double BounceEaseIn(double p)
+	{
+		return 1 - BounceEaseOut(1 - p);
+	}
 
-	double BounceEaseInOut(double p);
+	inline double BounceEaseOut(double p)
+	{
+		if (p < 4 / 11.0)
+		{
+			return (121 * p * p) / 16.0;
+		}
+		else if (p < 8 / 11.0)
+		{
+			return (363 / 40.0 * p * p) - (99 / 10.0 * p) + 17 / 5.0;
+		}
+		else if (p < 9 / 10.0)
+		{
+			return (4356 / 361.0 * p * p) - (35442 / 1805.0 * p) + 16061 / 1805.0;
+		}
+		else
+		{
+			return (54 / 5.0 * p * p) - (513 / 25.0 * p) + 268 / 25.0;
+		}
+	}
 
+	inline double BounceEaseInOut(double p)
+	{
+		if (p < 0.5)
+		{
+			return 0.5 * BounceEaseIn(p * 2);
+		}
+		else
+		{
+			return 0.5 * BounceEaseOut(p * 2 - 1) + 0.5;
+		}
+	}
 };
 
 class IPlugCubicBezierEase
@@ -235,6 +413,12 @@ public:
 
 	void Count()
 	{
+		if (notStarted)
+		{
+			out = start;
+			return;
+		}
+
 		if (counterClass && !counterClass->Finished())
 		{
 			out = start;
@@ -261,6 +445,7 @@ public:
 	{
 		count = start;
 		delayCounter = delay;
+		notStarted = false;
 	}
 
 	void Step(double Step)
@@ -280,7 +465,7 @@ public:
 
 	bool Finished()
 	{
-		if (end <= count) return true;
+		if (end <= count || notStarted) return true;
 
 		return false;
 	}
@@ -292,6 +477,8 @@ private:
 	double step = 0.0;
 
 	int delay = 0, delayCounter = 0;
+
+	bool notStarted = true;
 
 	IPlugAnimationCounter *counterClass = nullptr;
 };
@@ -305,7 +492,7 @@ public:
 		end = End;
 	}
 
-	void SetAnimationType(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	void SetAnimation(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
 	{
 		bezier_x1 = BezierX1;
 		bezier_y1 = BezierY1;
@@ -337,17 +524,17 @@ public:
 		counter.Delay(Delay);
 	}
 	
-	void WaitAnimationToFinish(IPlugAnimationBase *Animation)
+	void WaitAnimationToFinish(IPlugAnimationCounter *Counter)
 	{
-		counter.WaitCounterToFinish(Animation->GetCounter());
+		counter.WaitCounterToFinish(Counter);
 	}
 	
-	void UsingSmoothStep(bool State)
+	void UseSmoothStep(bool State)
 	{
 		smooth_step = State;
 	}
 
-	void Start()
+	void Exectute()
 	{
 		counter.Start();
 	}
@@ -355,6 +542,11 @@ public:
 	double Get()
 	{
 		return output;
+	}
+
+	double GetPosition()
+	{
+		return position;
 	}
 
 	bool Finished()
@@ -366,9 +558,9 @@ public:
 	{
 		counter.Count();
 
-		double position = TransferFunction(counter.Get());
+		position = counter.Get();
 
-		output = LinearInterpolation(start, end, position);
+		output = LinearInterpolation(start, end, TransferFunction(position));
 	}
 
 	IPlugAnimationCounter* GetCounter()
@@ -378,10 +570,11 @@ public:
 
 private:
 	double output = 0.0;
+	double position = 0.0;
 	double bezier_x1 = 0.0, bezier_y1 = 0.0, bezier_x2 = 1.0, bezier_y2 = 1.0;
-	double start = 0.0, end = 0.0, duration = 0.0;
+	double start = 0.0, end = 1.0, duration = 1.0;
 	bool smooth_step = false;
-	animationType animation_type;
+	animationType animation_type = animationType::LinearEase;
 	IPlugAnimationCounter counter;
 
 	inline double LinearInterpolation(double y1, double y2, double mu)
@@ -389,7 +582,7 @@ private:
 		return(y1*(1 - mu) + y2 * mu);
 	}
 
-	inline double IPlugAnimationBase::TransferFunction(double pos)
+	double TransferFunction(double pos)
 	{
 		if (smooth_step) pos = SMOOTHSTEP(pos);
 
@@ -457,14 +650,353 @@ private:
 class IPlugAnimation
 {
 public:
-	IPlugAnimation(IControl *Control)
+	void Init(IControl *Control, bool StartFromEnd = false)
 	{
-		control = Control;
+		if (initialized == false)
+		{
+			control = Control;
+			Control->GetGUI()->AddAnimation(this);
+
+			if (StartFromEnd) nextExecuteFromStartToEnd = false;
+
+			initialized = true;
+		}
 	}
 
 
+	void ExecuteAutoFromStartToEnd()
+	{
+		if (settingsChangedSinceLastExecute)
+		{
+			animationStartToEnd.SetPath(start, end);
+
+			if (durationInSeconds)
+				animationStartToEnd.SetDurationInSeconds(durationStartToEnd);
+			else
+				animationStartToEnd.SetDurationInFrames(int(durationStartToEnd));
+
+			if (delayInSeconds)
+				animationStartToEnd.SetDelayInSeconds(delayStartToEnd);
+			else
+				animationStartToEnd.SetDelayInFrames(int(delayStartToEnd));
+
+			animationStartToEnd.Exectute();
+
+			nextExecuteFromStartToEnd = false;
+			settingsChangedSinceLastExecute = false;
+		}
+	}
+
+	void ExecuteAutoFromEndToStart()
+	{
+		if (settingsChangedSinceLastExecute)
+		{
+			animationEndToStart.SetPath(start, end);
+
+			if (durationInSeconds)
+				animationEndToStart.SetDurationInSeconds(durationEndToStart);
+			else
+				animationEndToStart.SetDurationInFrames(int(durationEndToStart));
+
+			if (delayInSeconds)
+				animationEndToStart.SetDelayInSeconds(delayEndToStart);
+			else
+				animationEndToStart.SetDelayInFrames(int(delayEndToStart));
+
+			animationEndToStart.Exectute();
+
+			nextExecuteFromStartToEnd = true;
+			settingsChangedSinceLastExecute = false;
+		}
+	}
+
+	void Exectute()
+	{
+		if (nextExecuteFromStartToEnd)
+		{
+			if (animationEndToStart.Finished())
+			{
+				animationStartToEnd.SetPath(start, end);
+
+				if (durationInSeconds)
+					animationStartToEnd.SetDurationInSeconds(durationStartToEnd);
+				else
+					animationStartToEnd.SetDurationInFrames(int(durationStartToEnd));
+
+				if (delayInSeconds)
+					animationStartToEnd.SetDelayInSeconds(delayStartToEnd);
+				else
+					animationStartToEnd.SetDelayInFrames(int(delayStartToEnd));
+			}
+			else
+			{
+				animationStartToEnd.SetPath(out, end);
+
+				double pos = animationEndToStart.GetPosition();
+
+				if (durationInSeconds)
+					animationStartToEnd.SetDurationInSeconds(durationStartToEnd * pos);
+				else 
+					animationStartToEnd.SetDurationInFrames(int(durationStartToEnd * pos));
+
+				if (delayInSeconds)
+					animationStartToEnd.SetDelayInSeconds(delayStartToEnd);
+				else
+					animationStartToEnd.SetDelayInFrames(int(delayStartToEnd));
+			}
+
+			animationStartToEnd.Exectute();
+
+			nextExecuteFromStartToEnd = false;
+		}
+		else
+		{
+			if (animationStartToEnd.Finished())
+			{
+				animationEndToStart.SetPath(end, start);
+
+				if (durationInSeconds)
+					animationEndToStart.SetDurationInSeconds(durationEndToStart);
+				else
+					animationEndToStart.SetDurationInFrames(int(durationEndToStart));
+
+				if (delayInSeconds)
+					animationEndToStart.SetDelayInSeconds(delayEndToStart);
+				else
+					animationEndToStart.SetDelayInFrames(int(delayEndToStart));
+
+			}
+			else
+			{
+				animationEndToStart.SetPath(out, start);
+
+				double pos = animationStartToEnd.GetPosition();
+
+				if (durationInSeconds)
+					animationEndToStart.SetDurationInSeconds(durationEndToStart * pos);
+				else
+					animationEndToStart.SetDurationInFrames(int(durationEndToStart * pos));
+
+				if (delayInSeconds)
+					animationEndToStart.SetDelayInSeconds(delayEndToStart);
+				else
+					animationEndToStart.SetDelayInFrames(int(delayEndToStart));
+			}
+			animationEndToStart.Exectute();
+
+			nextExecuteFromStartToEnd = true;
+		}
+	}
+
+
+	double Get()
+	{
+		return out;
+	}
+
+
+	void SetPath(double Start, double End)
+	{
+		if (start != Start || end != End)
+			settingsChangedSinceLastExecute = true;
+
+		start = Start;
+		end = End;	
+	}
+
+
+	void SetAnimation(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	{
+		SetAnimationStartToEnd(Type, BezierX1, BezierY1, BezierX2, BezierY2);
+		SetAnimationEndToStart(Type, BezierX1, BezierY1, BezierX2, BezierY2);
+	}
+
+	void SetAnimationStartToEnd(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	{
+		if (animationTypeStartToEnd != Type)
+			settingsChangedSinceLastExecute = true;
+
+		animationTypeStartToEnd = Type;
+		animationStartToEnd.SetAnimation(Type, BezierX1, BezierY1, BezierX2, BezierY2);
+	}
+
+	void SetAnimationEndToStart(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	{
+		if (animationTypeEndToStart != Type)
+			settingsChangedSinceLastExecute = true;
+
+		animationTypeEndToStart = Type;
+		animationEndToStart.SetAnimation(Type, BezierX1, BezierY1, BezierX2, BezierY2);
+	}
+
+
+	void SetDurationInSeconds(double Duration)
+	{
+		SetDurationInSecondsStartToEnd(Duration);
+		SetDurationInSecondsEndToStart(Duration);
+	}
+
+	void SetDurationInSecondsStartToEnd(double Duration)
+	{
+		if (durationInSeconds != true || durationStartToEnd != Duration)
+			settingsChangedSinceLastExecute = true;
+
+		durationInSeconds = true;
+		durationStartToEnd = Duration;
+	}
+
+	void SetDurationInSecondsEndToStart(double Duration)
+	{
+		if (durationInSeconds != true || durationEndToStart != Duration)
+			settingsChangedSinceLastExecute = true;
+
+		durationInSeconds = true;
+		durationEndToStart = Duration;
+	}
+
+
+	void SetDurationInFrames(int Duration)
+	{
+		SetDurationInFramesStartToEnd(Duration);
+		SetDurationInFramesEndToStart(Duration);
+	}
+
+	void SetDurationInFramesStartToEnd(int Duration)
+	{
+		if (durationInSeconds != false || durationStartToEnd != (double)Duration)
+			settingsChangedSinceLastExecute = true;
+
+		durationInSeconds = false;
+		durationStartToEnd = Duration;
+	}
+
+	void SetDurationInFramesEndToStart(int Duration)
+	{
+		durationInSeconds = false;
+		durationEndToStart = Duration;
+	}
+
+
+	void SetDelayInSeconds(double Delay)
+	{
+		SetDelayInSecondsStartToEnd(Delay);
+		SetDelayInSecondsEndToStart(Delay);
+	}
+
+	void SetDelayInSecondsStartToEnd(double Delay)
+	{
+		if (delayInSeconds != true || delayStartToEnd != Delay)
+			settingsChangedSinceLastExecute = true;
+
+		delayInSeconds = true;
+		delayStartToEnd = Delay;
+	}
+
+	void SetDelayInSecondsEndToStart(double Delay)
+	{
+		if (delayInSeconds != true || delayEndToStart != Delay)
+			settingsChangedSinceLastExecute = true;
+
+		delayInSeconds = true;
+		delayEndToStart = Delay;
+	}
+
+
+	void SetDelayInFrames(int Delay)
+	{
+		SetDelayInFramesStartToEnd(Delay);
+		SetDelayInFramesEndToStart(Delay);
+	}
+
+	void SetDelayInFramesStartToEnd(int Delay)
+	{
+		if (delayInSeconds != false || delayStartToEnd != Delay)
+			settingsChangedSinceLastExecute = true;
+
+		delayInSeconds = false;
+		delayStartToEnd = Delay;
+	}
+
+	void SetDelayInFramesEndToStart(int Delay)
+	{
+		if (delayInSeconds != false || delayEndToStart != Delay)
+			settingsChangedSinceLastExecute = true;
+
+		delayInSeconds = false;
+		delayEndToStart = Delay;
+	}
+
+	void WaitAnimationToFinish(IPlugAnimation *Animation)
+	{
+		animationStartToEnd.WaitAnimationToFinish(Animation->GetStartToEndCounter());
+		animationEndToStart.WaitAnimationToFinish(Animation->GetEndToStartCounter());
+	}
+
+
+	// System -------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	void Count()
+	{
+		if (!nextExecuteFromStartToEnd)
+		{
+			animationStartToEnd.Count();
+			out = animationStartToEnd.Get();
+		}
+		else
+		{
+			animationEndToStart.Count();
+			out = animationEndToStart.Get();
+		}
+	}
+
+	bool ShouldRedraw()
+	{
+		if (nextExecuteFromStartToEnd)
+		{
+			if (!control->IsHidden() && !animationStartToEnd.Finished()) return true;
+		}
+		else
+		{
+			if (!control->IsHidden() && !animationEndToStart.Finished()) return true;
+		}
+
+		return false;
+	}
+
+	IRECT* GetRedrawArea()
+	{
+		return control->GetDrawRECT();
+	}
+
+	IPlugAnimationCounter* GetStartToEndCounter()
+	{
+		return animationStartToEnd.GetCounter();
+	}
+
+	IPlugAnimationCounter* GetEndToStartCounter()
+	{
+		return animationEndToStart.GetCounter();
+	}
+
 private:
-	IControl *control;
+	bool initialized = false;
+	bool useAutoExecute = false;
+	bool settingsChangedSinceLastExecute = false;
+	bool nextExecuteFromStartToEnd = true;
+
+	double start = 0.0, end = 1.0, out = 0.0;
+	double durationStartToEnd = 0.0, durationEndToStart = 0.0;
+	double delayStartToEnd = 0.0, delayEndToStart = 0.0;
+	animationType animationTypeStartToEnd = animationType::LinearEase;
+	animationType animationTypeEndToStart = animationType::LinearEase;
+
+	bool durationInSeconds = true;
+	bool delayInSeconds = true;
+
+	IRECT prevRect;
+
+	IControl *control = nullptr;
+	IPlugAnimationBase animationStartToEnd, animationEndToStart;
 };
 
 #endif
