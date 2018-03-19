@@ -252,9 +252,7 @@ void IPlugBase::AttachGraphics(IGraphics* pGraphics)
 		{
 			pGraphics->SetParameterFromPlug(i, GetParam(i)->GetNormalized(), true);
 		}
-
-		mGraphics = pGraphics;
-
+		
 #ifdef USING_YCAIRO
 		ycairo->bind_to_lice(pGraphics);
 #endif

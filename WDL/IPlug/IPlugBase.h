@@ -118,6 +118,9 @@ public:
 	IParam* GetParam(int idx) { return &mParams[idx]; }
 	IGraphics* GetGUI() { return mGraphics; }
 
+	// System call
+	void SetIGraphics(IGraphics* pGraphics) { mGraphics = pGraphics; }
+
 #ifdef USING_YCAIRO
 	ycairo_base* GetYCAIRO() { return ycairo; }
 
