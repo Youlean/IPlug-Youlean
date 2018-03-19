@@ -29,6 +29,7 @@
 	pPlug->GetYCAIRO()->set_HINSTANCE(gHInstance); // This is needed if you want to load fronts from memory
 #endif
 
+	pPlug->SetIGraphics(pGraphics);
     return pGraphics;
   }
 #elif defined OS_OSX
@@ -43,6 +44,7 @@
 	pPlug->GetYCAIRO()->set_BUNDLE_ID(BUNDLE_ID); // This is needed if you want to load fronts from memory
 #endif
 
+	pPlug->SetIGraphics(pGraphics);
     return pGraphics;
   }
 #else
