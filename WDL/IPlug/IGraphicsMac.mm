@@ -971,6 +971,56 @@ void* IGraphicsMac::GetWindow()
     else return 0;
 }
 
+IRECT IGraphicsMac::GetWindowRECT()
+{
+    if (mGraphicsCocoa)
+    {
+        NSWindow *window = [(IGRAPHICS_COCOA*) mGraphicsCocoa window];
+        NSRect r = window.frame;
+        NSRect mr = [[NSScreen mainScreen] frame];
+        
+        int L = r.origin.x;
+        int R = r.origin.x + r.size.width;
+        
+        int B = mr.size.height - r.origin.y;
+        int T = B - r.size.height;
+        
+        return IRECT(L, T, R, B);
+    }
+    return IRECT();
+}
+IRECT IGraphicsMac::GetMainWindowRECT()
+{
+    if (mGraphicsCocoa)
+    {
+        NSWindow *window = [[[NSApplication sharedApplication] windows] firstObject];
+        NSRect r = window.frame;
+        NSRect mr = [[NSScreen mainScreen] frame];
+        
+        int L = r.origin.x;
+        int R = r.origin.x + r.size.width;
+        
+        int B = mr.size.height - r.origin.y;
+        int T = B - r.size.height;
+        
+        return IRECT(L, T, R, B);
+    }
+    return IRECT();
+}
+IRECT IGraphicsMac::GetMonitorRECT()
+{
+    NSRect r = [[NSScreen mainScreen] visibleFrame];
+    NSRect mr = [[NSScreen mainScreen] frame];
+    
+    int L = r.origin.x;
+    int R = r.origin.x + r.size.width;
+    
+    int B = mr.size.height - r.origin.y;
+    int T = B - r.size.height;
+    
+    return IRECT(L, T, R, B);
+}
+
 // static
 int IGraphicsMac::GetUserOSVersion()   // Returns a number like 0x1050 (10.5).
 {

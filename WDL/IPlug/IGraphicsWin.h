@@ -60,6 +60,8 @@ public:
   void SetMainWndClassName(char* name) { mMainWndClassName.Set(name); }
   void GetMainWndClassName(char* name) { strcpy(name, mMainWndClassName.Get()); }
   IRECT GetWindowRECT();
+  IRECT GetMainWindowRECT();
+  IRECT GetMonitorRECT();
   void SetWindowTitle(char* str);
 
   const char* GetGUIAPI() { return "Windows GDI"; };

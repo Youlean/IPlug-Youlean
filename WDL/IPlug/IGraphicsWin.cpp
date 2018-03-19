@@ -844,6 +844,25 @@ IRECT IGraphicsWin::GetWindowRECT()
   return IRECT();
 }
 
+IRECT IGraphicsWin::GetMainWindowRECT()
+{
+	if (GetMainWnd())
+	{
+		RECT r;
+		GetWindowRect(GetMainWnd(), &r);
+		return IRECT(r.left, r.top, r.right, r.bottom);
+	}
+	return IRECT();
+}
+
+IRECT IGraphicsWin::GetMonitorRECT()
+{
+	RECT r;
+	SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0);
+
+	return IRECT(r.left, r.top, r.right, r.bottom);
+}
+
 void IGraphicsWin::SetWindowTitle(char* str)
 {
   SetWindowText(mPlugWnd, str);

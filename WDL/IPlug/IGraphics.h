@@ -137,6 +137,10 @@ public:
 	virtual void CloseWindow() = 0;
 	virtual void* GetWindow() = 0;
 
+	virtual IRECT GetWindowRECT() = 0;
+	virtual IRECT GetMainWindowRECT() = 0;
+	virtual IRECT GetMonitorRECT() = 0;
+
 	void OnGUIOpen();
 	void OnGUIClose();
 
