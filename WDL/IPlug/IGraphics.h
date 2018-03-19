@@ -42,6 +42,7 @@ class IPlugBase;
 class IControl;
 class IParam;
 class IPlugGUIResize;
+class IPlugAnimation;
 
 class IGraphics
 {
@@ -155,6 +156,8 @@ public:
 	int Height() { return mHeight; }
 	int FPS() { return mFPS; }
 	void SetFPS(int FPS) { mFPS = FPS; }
+
+	void AddAnimation(IPlugAnimation *animation);
 
 	// This is needed for GUI resizing------------------------------------------------------------------------
 	void RescaleBitmaps(double guiScaleRatio);

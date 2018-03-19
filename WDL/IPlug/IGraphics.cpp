@@ -1,5 +1,6 @@
 #include "IGraphics.h"
 #include "IPlugGUIResize.h"
+#include "IPlugAnimation.h"
 
 #define DEFAULT_FPS 120
 
@@ -420,6 +421,11 @@ void ResizeBitmap(LICE_IBitmap* source, LICE_IBitmap* destination, int nStates, 
 		ResizeBilinear(source->getRowSpan(), source->getWidth(), destination->getRowSpan(), destination->getWidth(),
 			pointer_to_source, pointer_to_destination, source->getWidth(), source->getHeight(), destination->getWidth(), destination->getHeight());
 	}
+}
+
+void IGraphics::AddAnimation(IPlugAnimation * animation)
+{
+	animations.push_back(animation);
 }
 
 void IGraphics::RescaleBitmaps(double guiScaleRatio)
@@ -1140,6 +1146,15 @@ bool IGraphics::IsDirty(IRECT* pR)
 		nonScaledDrawRECT.B = int(nonScaledDrawRECT.B * guiScaleRatio + 0.9999999);
 
 		*pR = nonScaledDrawRECT;
+	}
+
+	// Count animations
+	for (int i = 0; i < animations.size(); i++)
+	{
+		animations[i]->Count();
+
+		if (animations[i]->ShouldRedraw())
+			pR->Union(animations[i]->GetRedrawArea());
 	}
 
 #ifdef USE_IDLE_CALLS
