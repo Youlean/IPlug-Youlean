@@ -1213,9 +1213,9 @@ bool IGraphics::Draw(IRECT* pR)
 			IControl* pControl = mControls.Get(i);
 			if (!(pControl->IsHidden()) && pR->Intersects(pControl->GetDrawRECT()))
 			{
+				pControl->SetClean();
 				pControl->Draw(this);
-			}
-			pControl->SetClean();
+			}	
 		}
 	}
 	else
@@ -1229,8 +1229,8 @@ bool IGraphics::Draw(IRECT* pR)
 				IControl* pControl2 = mControls.Get(j);
 				if (!j || !(pControl2->IsHidden()))
 				{
-					pControl2->Draw(this);
 					pControl2->SetClean();
+					pControl2->Draw(this);
 				}
 			}
 		}
@@ -1241,10 +1241,12 @@ bool IGraphics::Draw(IRECT* pR)
 				IControl* pControl = mControls.Get(i); // assign control i to pControl
 				if (pControl->IsDirty())   // if pControl is dirty
 				{
+					pControl->SetClean();
 
 					// printf("control %i is Dirty\n", i);
 
 					mDrawRECT = *(pControl->GetDrawRECT()); // put the rect in the mDrawRect member variable
+
 					for (j = startDrawingFromIndex; j < n; ++j)   // loop through all controls
 					{
 						IControl* pControl2 = mControls.Get(j); // assign control j to pControl2
@@ -1258,7 +1260,6 @@ bool IGraphics::Draw(IRECT* pR)
 							pControl2->Draw(this);
 						}
 					}
-					pControl->SetClean();
 				}
 			}
 		}
