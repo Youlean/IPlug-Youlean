@@ -227,6 +227,11 @@ public:
 	double GetWidnowSizeHeightRatio();
 	double GetWidnowWidthNormalized();
 	double GetWidnowHeightNormalized();
+	double GetWindowMinWidthLimit(int viewMode);
+	double GetWindowMaxWidthLimit(int viewMode);
+	double GetWindowMinHeightLimit(int viewMode);
+	double GetWindowMaxHeightLimit(int viewMode);
+
 	bool IsAttachedToIPlugBase();
 	DRECT GetOriginalDrawRECTForControl(IControl *pControl);
 	DRECT GetOriginalTargetRECTForControl(IControl *pControl);

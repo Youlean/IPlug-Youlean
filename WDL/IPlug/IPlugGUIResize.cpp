@@ -504,6 +504,26 @@ void IPlugGUIResize::SetWindowSizeLimits(int viewMode, double minWindowWidth, do
 	window_height_normalized = BOUNDED(window_height_normalized, view_container.min_window_height_normalized[current_view_mode], view_container.max_window_height_normalized[current_view_mode]);
 }
 
+double IPlugGUIResize::GetWindowMinWidthLimit(int viewMode)
+{
+	return view_container.min_window_width_normalized[viewMode];
+}
+
+double IPlugGUIResize::GetWindowMaxWidthLimit(int viewMode)
+{
+	return view_container.max_window_width_normalized[viewMode];
+}
+
+double IPlugGUIResize::GetWindowMinHeightLimit(int viewMode)
+{
+	return view_container.min_window_height_normalized[viewMode];
+}
+
+double IPlugGUIResize::GetWindowMaxHeightLimit(int viewMode)
+{
+	return view_container.max_window_height_normalized[viewMode];
+}
+
 void  IPlugGUIResize::UsingBitmaps()
 {
 	using_bitmaps = true;
