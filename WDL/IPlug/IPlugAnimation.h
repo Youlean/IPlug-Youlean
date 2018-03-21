@@ -44,7 +44,7 @@ See easing curves here: http://easings.net/
 
 using namespace std;
 
-enum animationType
+enum animationEase
 {
 	LinearEase,
 
@@ -98,6 +98,13 @@ enum animationType
 	BezierSwiftIn,
 	BezierSwiftOut,
 	BezierCustom
+};
+
+enum executeDirection
+{
+	startToEndPath,
+	endToStartPath,
+	bothPaths
 };
 
 class IPlugEase
@@ -492,7 +499,7 @@ public:
 		end = End;
 	}
 
-	void SetAnimation(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	void SetAnimation(animationEase Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
 	{
 		bezier_x1 = BezierX1;
 		bezier_y1 = BezierY1;
@@ -574,7 +581,7 @@ private:
 	double bezier_x1 = 0.0, bezier_y1 = 0.0, bezier_x2 = 1.0, bezier_y2 = 1.0;
 	double start = 0.0, end = 1.0, duration = 1.0;
 	bool smooth_step = false;
-	animationType animation_type = animationType::LinearEase;
+	animationEase animation_type = animationEase::LinearEase;
 	IPlugAnimationCounter counter;
 
 	inline double LinearInterpolation(double y1, double y2, double mu)
@@ -588,58 +595,58 @@ private:
 
 		switch (animation_type)
 		{
-		case animationType::LinearEase: return pos;
+		case animationEase::LinearEase: return pos;
 
-		case animationType::QuadraticEaseIn: return QuadraticEaseIn(pos);
-		case animationType::QuadraticEaseOut: return QuadraticEaseOut(pos);
-		case animationType::QuadraticEaseInOut: return QuadraticEaseInOut(pos);
+		case animationEase::QuadraticEaseIn: return QuadraticEaseIn(pos);
+		case animationEase::QuadraticEaseOut: return QuadraticEaseOut(pos);
+		case animationEase::QuadraticEaseInOut: return QuadraticEaseInOut(pos);
 
-		case animationType::CubicEaseIn: return CubicEaseIn(pos);
-		case animationType::CubicEaseOut: return CubicEaseOut(pos);
-		case animationType::CubicEaseInOut: return CubicEaseInOut(pos);
+		case animationEase::CubicEaseIn: return CubicEaseIn(pos);
+		case animationEase::CubicEaseOut: return CubicEaseOut(pos);
+		case animationEase::CubicEaseInOut: return CubicEaseInOut(pos);
 
-		case animationType::QuarticEaseIn: return QuarticEaseIn(pos);
-		case animationType::QuarticEaseOut: return QuarticEaseOut(pos);
-		case animationType::QuarticEaseInOut: return QuarticEaseInOut(pos);
+		case animationEase::QuarticEaseIn: return QuarticEaseIn(pos);
+		case animationEase::QuarticEaseOut: return QuarticEaseOut(pos);
+		case animationEase::QuarticEaseInOut: return QuarticEaseInOut(pos);
 
-		case animationType::QuinticEaseIn: return QuinticEaseIn(pos);
-		case animationType::QuinticEaseOut: return QuinticEaseOut(pos);
-		case animationType::QuinticEaseInOut: return QuinticEaseInOut(pos);
+		case animationEase::QuinticEaseIn: return QuinticEaseIn(pos);
+		case animationEase::QuinticEaseOut: return QuinticEaseOut(pos);
+		case animationEase::QuinticEaseInOut: return QuinticEaseInOut(pos);
 
-		case animationType::SineEaseIn: return SineEaseIn(pos);
-		case animationType::SineEaseOut: return SineEaseOut(pos);
-		case animationType::SineEaseInOut: return SineEaseInOut(pos);
+		case animationEase::SineEaseIn: return SineEaseIn(pos);
+		case animationEase::SineEaseOut: return SineEaseOut(pos);
+		case animationEase::SineEaseInOut: return SineEaseInOut(pos);
 
-		case animationType::CircularEaseIn: return CircularEaseIn(pos);
-		case animationType::CircularEaseOut: return CircularEaseOut(pos);
-		case animationType::CircularEaseInOut: return CircularEaseInOut(pos);
+		case animationEase::CircularEaseIn: return CircularEaseIn(pos);
+		case animationEase::CircularEaseOut: return CircularEaseOut(pos);
+		case animationEase::CircularEaseInOut: return CircularEaseInOut(pos);
 
-		case animationType::ExponentialEaseIn: return ExponentialEaseIn(pos);
-		case animationType::ExponentialEaseOut: return ExponentialEaseOut(pos);
-		case animationType::ExponentialEaseInOut: return ExponentialEaseInOut(pos);
+		case animationEase::ExponentialEaseIn: return ExponentialEaseIn(pos);
+		case animationEase::ExponentialEaseOut: return ExponentialEaseOut(pos);
+		case animationEase::ExponentialEaseInOut: return ExponentialEaseInOut(pos);
 
-		case animationType::ElasticEaseIn: return ElasticEaseIn(pos);
-		case animationType::ElasticEaseOut: return ElasticEaseOut(pos);
-		case animationType::ElasticEaseInOut: return ElasticEaseInOut(pos);
+		case animationEase::ElasticEaseIn: return ElasticEaseIn(pos);
+		case animationEase::ElasticEaseOut: return ElasticEaseOut(pos);
+		case animationEase::ElasticEaseInOut: return ElasticEaseInOut(pos);
 
-		case animationType::BackEaseIn: return BackEaseIn(pos);
-		case animationType::BackEaseOut: return BackEaseOut(pos);
-		case animationType::BackEaseInOut: return BackEaseInOut(pos);
+		case animationEase::BackEaseIn: return BackEaseIn(pos);
+		case animationEase::BackEaseOut: return BackEaseOut(pos);
+		case animationEase::BackEaseInOut: return BackEaseInOut(pos);
 
-		case animationType::BounceEaseIn: return BounceEaseIn(pos);
-		case animationType::BounceEaseOut: return BounceEaseOut(pos);
-		case animationType::BounceEaseInOut: return BounceEaseInOut(pos);
+		case animationEase::BounceEaseIn: return BounceEaseIn(pos);
+		case animationEase::BounceEaseOut: return BounceEaseOut(pos);
+		case animationEase::BounceEaseInOut: return BounceEaseInOut(pos);
 
-		case animationType::BezierEase: return CubicBezierEase(pos, 0.25, 0.1, 0.25, 1.0);
-		case animationType::BezierEaseIn: return CubicBezierEase(pos, 0.42, 0, 1.0, 1.0);
-		case animationType::BezierEaseOut: return CubicBezierEase(pos, 0, 0, 0.58, 1.0);
-		case animationType::BezierEaseInOut: return CubicBezierEase(pos, 0.42, 0, 0.58, 1.0);
-		case animationType::BezierSwiftMove: return CubicBezierEase(pos, 0.4, 0, 0.2, 1.0);
-		case animationType::BezierSwifterMove: return CubicBezierEase(pos, 0.4, 0, 0, 1.0);
-		case animationType::BezierHeavyMove: return CubicBezierEase(pos, 0.7, 0, 0.6, 1.0);
-		case animationType::BezierSwiftIn: return CubicBezierEase(pos, 0, 0, 0.2, 1.0);
-		case animationType::BezierSwiftOut: return CubicBezierEase(pos, 0.4, 0, 1.0, 1.0);
-		case animationType::BezierCustom: return CubicBezierEase(pos, bezier_x1, bezier_y1, bezier_x2, bezier_y2);
+		case animationEase::BezierEase: return CubicBezierEase(pos, 0.25, 0.1, 0.25, 1.0);
+		case animationEase::BezierEaseIn: return CubicBezierEase(pos, 0.42, 0, 1.0, 1.0);
+		case animationEase::BezierEaseOut: return CubicBezierEase(pos, 0, 0, 0.58, 1.0);
+		case animationEase::BezierEaseInOut: return CubicBezierEase(pos, 0.42, 0, 0.58, 1.0);
+		case animationEase::BezierSwiftMove: return CubicBezierEase(pos, 0.4, 0, 0.2, 1.0);
+		case animationEase::BezierSwifterMove: return CubicBezierEase(pos, 0.4, 0, 0, 1.0);
+		case animationEase::BezierHeavyMove: return CubicBezierEase(pos, 0.7, 0, 0.6, 1.0);
+		case animationEase::BezierSwiftIn: return CubicBezierEase(pos, 0, 0, 0.2, 1.0);
+		case animationEase::BezierSwiftOut: return CubicBezierEase(pos, 0.4, 0, 1.0, 1.0);
+		case animationEase::BezierCustom: return CubicBezierEase(pos, bezier_x1, bezier_y1, bezier_x2, bezier_y2);
 
 		default: return pos;
 		}
@@ -663,7 +670,7 @@ public:
 		}
 	}
 
-
+	
 	void ExecuteAutoFromStartToEnd()
 	{
 		if (settingsChangedSinceLastExecute)
@@ -712,6 +719,8 @@ public:
 
 	void Exectute()
 	{
+		SetPathDirrection();
+
 		if (nextExecuteFromStartToEnd)
 		{
 			if (animationEndToStart.Finished())
@@ -795,23 +804,24 @@ public:
 	}
 
 
-	void SetPath(double Start, double End)
+	void SetPath(double Start, double End, executeDirection ManualExecuteDirection = executeDirection::startToEndPath)
 	{
-		if (start != Start || end != End)
+		if (start != Start || end != End || pathDirection != ManualExecuteDirection)
 			settingsChangedSinceLastExecute = true;
 
 		start = Start;
 		end = End;	
+		pathDirection = ManualExecuteDirection;
 	}
 
 
-	void SetAnimation(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	void SetAnimation(animationEase Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
 	{
 		SetAnimationStartToEnd(Type, BezierX1, BezierY1, BezierX2, BezierY2);
 		SetAnimationEndToStart(Type, BezierX1, BezierY1, BezierX2, BezierY2);
 	}
 
-	void SetAnimationStartToEnd(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	void SetAnimationStartToEnd(animationEase Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
 	{
 		if (animationTypeStartToEnd != Type)
 			settingsChangedSinceLastExecute = true;
@@ -820,7 +830,7 @@ public:
 		animationStartToEnd.SetAnimation(Type, BezierX1, BezierY1, BezierX2, BezierY2);
 	}
 
-	void SetAnimationEndToStart(animationType Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
+	void SetAnimationEndToStart(animationEase Type, double BezierX1 = 0, double BezierY1 = 0, double BezierX2 = 0, double BezierY2 = 0)
 	{
 		if (animationTypeEndToStart != Type)
 			settingsChangedSinceLastExecute = true;
@@ -926,6 +936,7 @@ public:
 		delayEndToStart = Delay;
 	}
 
+	// TODO: Add at what percentage completion to start
 	void WaitAnimationToFinish(IPlugAnimation *Animation)
 	{
 		animationStartToEnd.WaitAnimationToFinish(Animation->GetStartToEndCounter());
@@ -979,6 +990,12 @@ public:
 	}
 
 private:
+	void SetPathDirrection()
+	{
+		if (pathDirection == executeDirection::startToEndPath) nextExecuteFromStartToEnd = true;
+		if (pathDirection == executeDirection::endToStartPath) nextExecuteFromStartToEnd = false;
+	}
+	
 	bool initialized = false;
 	bool useAutoExecute = false;
 	bool settingsChangedSinceLastExecute = false;
@@ -987,8 +1004,11 @@ private:
 	double start = 0.0, end = 1.0, out = 0.0;
 	double durationStartToEnd = 0.0, durationEndToStart = 0.0;
 	double delayStartToEnd = 0.0, delayEndToStart = 0.0;
-	animationType animationTypeStartToEnd = animationType::LinearEase;
-	animationType animationTypeEndToStart = animationType::LinearEase;
+
+	animationEase animationTypeStartToEnd = animationEase::LinearEase;
+	animationEase animationTypeEndToStart = animationEase::LinearEase;
+
+	executeDirection pathDirection = executeDirection::startToEndPath;
 
 	bool durationInSeconds = true;
 	bool delayInSeconds = true;
