@@ -29,12 +29,14 @@ using namespace std;
 class IPlugGUILiveEdit : public IControl
 {
 public:
-	IPlugGUILiveEdit(IPlugBase* pPlug, const char* _pathToSource, int _gridSize)
+	IPlugGUILiveEdit(IPlugBase* pPlug, const char* _pathToSource, int _gridSize, bool editOnStart = true)
 		: IControl(pPlug, IRECT(0, 0, 1, 1))
 	{
 		mTargetRECT = mDrawRECT;
 		pathToSource = _pathToSource;
 		gridSize = _gridSize;
+
+		if (!editOnStart) editModeActive = false;
 	}
 
 	~IPlugGUILiveEdit() {}
