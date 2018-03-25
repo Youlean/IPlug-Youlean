@@ -807,11 +807,30 @@ public:
 	void SetPath(double Start, double End, executeDirection ManualExecuteDirection = executeDirection::startToEndPath)
 	{
 		if (start != Start || end != End || pathDirection != ManualExecuteDirection)
+		{
 			settingsChangedSinceLastExecute = true;
 
-		start = Start;
-		end = End;	
-		pathDirection = ManualExecuteDirection;
+			start = Start;
+			end = End;
+			pathDirection = ManualExecuteDirection;
+
+			if (initializedPath == false)
+			{
+				if (pathDirection == executeDirection::endToStartPath)
+				{
+					out = end;
+				}
+				else
+				{	
+					out = start;
+				}
+
+				animationStartToEnd.SetPath(start, end);
+				animationEndToStart.SetPath(start, end);
+
+				initializedPath = true;
+			}
+		}
 	}
 
 
@@ -997,6 +1016,7 @@ private:
 	}
 	
 	bool initialized = false;
+	bool initializedPath = false;
 	bool useAutoExecute = false;
 	bool settingsChangedSinceLastExecute = false;
 	bool nextExecuteFromStartToEnd = true;
