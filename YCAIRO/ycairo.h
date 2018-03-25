@@ -224,16 +224,16 @@ public:
 	void ycairo_set_source_rgba_fast(cairo_t *cr, IColor color);
 	void ycairo_set_source_rgba_fast(cairo_t *cr, IColor *color);
 
-	void ycairo_rotate_around_point(cairo_t *cr, double x, double y, double angle)
-	{
-		cairo_translate(cr, x, y);
-		cairo_rotate(cr, angle);
-		cairo_translate(cr, -x, -y);
-	}
+	void ycairo_anchor_rotate(cairo_t *cr, double x, double y, double angle);
+	void ycairo_anchor_scale(cairo_t *cr, double x, double y, double sx, double sy);
 
 	void ycairo_reset_clip_to(cairo_t *cr, IRECT rect);
 
-	void ycairo_draw_svg(cairo_t* cr, string path);
+	void ycairo_draw_svg(cairo_t *cr, string path);
+
+	// Current implementation can be more efficient. Possible implementation of cairo grayscale: http://cairo.cairographics.narkive.com/80BbUKGG/render-in-grayscale
+	void ycairo_begin_grayscale(cairo_t *cr);
+	void ycairo_end_grayscale(cairo_t *cr, double alpha = 1.0);
 };
 
 class ycairo_text

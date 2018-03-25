@@ -318,6 +318,20 @@ void ycairo_helper::ycairo_set_source_rgba_fast(cairo_t * cr, IColor *color)
 	cairo_set_source_rgba(cr, color->R / 256.0, color->G / 256.0, color->B / 256.0, color->A / 256.0);
 }
 
+void ycairo_helper::ycairo_anchor_rotate(cairo_t * cr, double x, double y, double angle)
+{
+	cairo_translate(cr, x, y);
+	cairo_rotate(cr, angle);
+	cairo_translate(cr, -x, -y);
+}
+
+void ycairo_helper::ycairo_anchor_scale(cairo_t * cr, double x, double y, double sx, double sy)
+{
+	cairo_translate(cr, x, y);
+	cairo_scale(cr, sx, sy);
+	cairo_translate(cr, -x, -y);
+}
+
 
 void ycairo_drop_shadow::_ycairo_draw_drop_shadow_fast(cairo_t * cr, bool stroke)
 {
@@ -1556,4 +1570,20 @@ void ycairo_helper::ycairo_draw_svg(cairo_t * cr, string path)
 	NSVGimage *SVG = nsvgParseFromFile(path.c_str(), "px", 96);
 	RenderNanoSVG(cr, SVG);
 	nsvgDelete(SVG);
+}
+
+void ycairo_helper::ycairo_begin_grayscale(cairo_t * cr)
+{
+	cairo_push_group_with_content(cr, CAIRO_CONTENT_COLOR_ALPHA);
+}
+
+void ycairo_helper::ycairo_end_grayscale(cairo_t * cr, double alpha)
+{
+	cairo_pop_group_to_source(cr);
+
+	cairo_operator_t op = cairo_get_operator(cr);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_HSL_LUMINOSITY);
+	cairo_paint_with_alpha(cr, alpha);
+	cairo_set_operator(cr, op);
 }
