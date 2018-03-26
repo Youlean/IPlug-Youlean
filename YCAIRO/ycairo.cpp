@@ -1572,18 +1572,103 @@ void ycairo_helper::ycairo_draw_svg(cairo_t * cr, string path)
 	nsvgDelete(SVG);
 }
 
-void ycairo_helper::ycairo_begin_grayscale(cairo_t * cr)
+void ycairo_grayscale::ycairo_begin_grayscale(cairo_t * cr)
 {
 	cairo_push_group_with_content(cr, CAIRO_CONTENT_COLOR_ALPHA);
 }
 
-void ycairo_helper::ycairo_end_grayscale(cairo_t * cr, double alpha)
+void ycairo_grayscale::ycairo_end_grayscale_slow(cairo_t * cr, double alpha)
 {
-	cairo_pop_group_to_source(cr);
+	cairo_pattern_t *mask = cairo_pop_group(cr);
+	cairo_set_source(cr, mask);
 
 	cairo_operator_t op = cairo_get_operator(cr);
+	cairo_set_operator(cr, cairo_operator_t::CAIRO_OPERATOR_HSL_LUMINOSITY);
 
-	cairo_set_operator(cr, CAIRO_OPERATOR_HSL_LUMINOSITY);
-	cairo_paint_with_alpha(cr, alpha);
+	if (alpha == 1.0)
+		cairo_paint_with_alpha(cr, alpha);
+	else
+		cairo_paint(cr);
+
+	cairo_pattern_destroy(mask);
 	cairo_set_operator(cr, op);
 }
+
+void ycairo_grayscale::ycairo_end_grayscale(cairo_t * cr, double intensity, double alpha, bool using_luminosity, bool skip_transparent)
+{
+	cairo_surface_t *surface = cairo_get_group_target(cr);
+	cairo_surface_type_t type = cairo_surface_get_type(surface);
+
+	// If backend if not image surface use luminosity type
+	if (type != cairo_surface_type_t::CAIRO_SURFACE_TYPE_IMAGE)
+	{
+		ycairo_end_grayscale_slow(cr, alpha);
+		return;
+	}
+
+	int img_width = cairo_image_surface_get_width(surface);
+	int img_height = cairo_image_surface_get_height(surface);
+	int stride = cairo_image_surface_get_stride(surface);
+
+	unsigned char* data = cairo_image_surface_get_data(surface);
+
+	for (int y = 0; y < img_height; y++)
+	{
+		for (int x = 0; x < img_width; x++)
+		{
+			unsigned int* pixel = (unsigned int*)(data);
+			pixel += x;
+
+			int B = ((*pixel) >> 0) & 0xff;
+			int G = ((*pixel) >> 8) & 0xff;
+			int R = ((*pixel) >> 16) & 0xff;
+			int A = ((*pixel) >> 24) & 0xff;
+
+			if (skip_transparent && A == 0) continue;
+
+			unsigned char average;
+
+			if (using_luminosity)
+				average = (unsigned char)((double)R * 0.3 + (double)G * 0.59 + (double)B * 0.11);
+			else
+				average = (unsigned char)((R + G + B) / 3);
+
+			if (intensity != 1.0)
+			{
+				double double_average = average;
+
+				double_average *= intensity;
+
+				double_average = IPMAX(double_average, 0);
+				double_average = IPMIN(double_average, 255);
+
+				average = (unsigned char)double_average;
+			}
+
+			unsigned char *char_data = (unsigned char*)pixel;
+
+			*char_data = average;
+			char_data++;
+
+			*char_data = average;
+			char_data++;
+
+			*char_data = average;
+		}
+
+		data += stride;
+	}
+
+	cairo_surface_flush(surface);
+
+	cairo_pattern_t *mask = cairo_pop_group(cr);
+	cairo_set_source(cr, mask);
+
+	if (alpha == 1.0)
+		cairo_paint_with_alpha(cr, alpha);
+	else
+		cairo_paint(cr);
+
+	cairo_pattern_destroy(mask);
+}
+

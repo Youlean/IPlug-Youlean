@@ -230,10 +230,14 @@ public:
 	void ycairo_reset_clip_to(cairo_t *cr, IRECT rect);
 
 	void ycairo_draw_svg(cairo_t *cr, string path);
+};
 
-	// Current implementation can be more efficient. Possible implementation of cairo grayscale: http://cairo.cairographics.narkive.com/80BbUKGG/render-in-grayscale
+class ycairo_grayscale
+{
+public:
 	void ycairo_begin_grayscale(cairo_t *cr);
-	void ycairo_end_grayscale(cairo_t *cr, double alpha = 1.0);
+	void ycairo_end_grayscale(cairo_t *cr, double intensity = 1.0, double alpha = 1.0, bool using_luminosity = true, bool skip_transparent_parts = true);
+	void ycairo_end_grayscale_slow(cairo_t * cr, double alpha = 1.0);
 };
 
 class ycairo_text
@@ -324,7 +328,7 @@ private:
 
 };
 
-class ycairo_gui : public ycairo_helper
+class ycairo_gui : public ycairo_helper, public ycairo_grayscale
 {
 public:
 	ycairo_gui(ycairo_base *ycairo_base, IControl *pControl);
