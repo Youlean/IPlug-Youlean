@@ -22,6 +22,7 @@
 #include "../wdlstring.h"
 #include "../ptrlist.h"
 #include "../wdlendian.h"
+#include <type_traits>
 
 #define FREE_NULL(p) {free(p);p=0;}
 #define DELETE_NULL(p) {delete(p); p=0;}
@@ -61,6 +62,12 @@ template <class T> inline void SWAP(T& a, T& b)
 {
   T tmp = a; a = b; b = tmp;
 }
+
+template<typename T>
+struct is_vector : public std::false_type {};
+
+template<typename T, typename A>
+struct is_vector<std::vector<T, A>> : public std::true_type {};
 
 typedef unsigned char BYTE;
 class ByteChunk
@@ -238,14 +245,14 @@ public:
   }
 
   template <typename T>
-  inline int PutStdContainer(const T *data)
+  inline int PutStdContainerSlow(const T *data)
   {
 	  int numItems = data->size();
 	  Put(&numItems);
 
 	  // If vector is 0, return
 	  if (numItems == 0)  return mBytes.GetSize();
-	  	  
+
 	  for (int i = 0; i < numItems; i++)
 	  {
 		  typename T::value_type value = (*data)[i];
@@ -256,11 +263,46 @@ public:
   }
 
   template <typename T>
-  inline int GetStdContainer(T *data, int startPos)
+  inline int PutStdContainer(const T *data)
+  {
+	  int numItems = data->size();
+	  Put(&numItems);
+
+	  // If vector is 0, return
+	  if (numItems == 0)  return mBytes.GetSize();
+
+	  // Get current chunk size
+	  int n = mBytes.GetSize();
+
+	  // Resize chunk to make room for container
+	  mBytes.Resize(n + numItems * sizeof(T::value_type));
+	  	
+	  // If vector use faster memcpy
+	  if (is_vector<T>{})
+	  {
+		  // Copy vector
+		  memcpy(mBytes.Get() + n, (BYTE*)&(*data)[0], numItems * sizeof(T::value_type));
+	  }
+	  else
+	  {
+		  for (int i = 0; i < numItems; i++)
+		  {
+			  int byteCounter = i * sizeof(T::value_type);
+
+			  // Copy vector
+			  memcpy(mBytes.Get() + n + byteCounter, (BYTE*)&(*data)[i], sizeof(T::value_type));
+		  }
+	  }
+
+	  return mBytes.GetSize();
+  }
+
+  template <typename T>
+  inline int GetStdContainerSlow(T *data, int startPos)
   {
 	  int size;
 	  startPos = Get(&size, startPos);
-	  
+
 	  if (size > 0)
 	  {
 		  data->resize(size);
@@ -271,6 +313,63 @@ public:
 			  startPos = Get(&value, startPos);
 
 			  (*data)[i] = value;
+		  }
+	  }
+	  return startPos;
+  }
+
+  template <typename T>
+  inline int GetStdContainer(T *data, int startPos)
+  {
+	  int size;
+	  startPos = Get(&size, startPos);
+	  int sizeBytes = size * sizeof(T::value_type);
+
+	  int bs = mBytes.GetSize();
+	  
+	  if (size > 0 && startPos >= 0)
+	  {
+		  data->resize(size);
+
+		  if (is_vector<T>{})
+		  {
+			  // Get new end position
+			  int endPos = startPos + sizeBytes;
+
+			  // Check if we are not requesting values outsize of chunk
+			  if (endPos <= mBytes.GetSize())
+			  {
+				  memcpy((BYTE*)&(*data)[0], mBytes.Get() + startPos, sizeBytes);
+				  startPos = endPos;
+			  }
+			  else
+			  {
+				  startPos = -1;
+			  }
+		  }
+		  else
+		  {
+			  int beforeLoopStartPos = startPos;
+
+			  for (int i = 0; i < size; i++)
+			  {
+				  int byteCounter = i * sizeof(T::value_type);
+
+				  // Get new end position
+				  int endPos = beforeLoopStartPos + byteCounter + sizeof(T::value_type);
+
+				  // Check if we are not requesting values outsize of chunk
+				  if (endPos <= mBytes.GetSize())
+				  {
+					  memcpy((BYTE*)&(*data)[i], mBytes.Get() + beforeLoopStartPos + byteCounter, sizeof(T::value_type));
+					  startPos = endPos;
+				  }
+				  else
+				  {
+					  startPos = -1;
+					  break;
+				  }
+			  }
 		  }
 	  }
 	  return startPos;
