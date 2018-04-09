@@ -2,6 +2,7 @@
 #define _ICONTROLGROUP_
 
 #include "IPlugStructs.h"
+#include <vector>
 
 class IPlugBase;
 class IControl;
@@ -10,11 +11,20 @@ class IControlGroup
 {
 public:
 	IControlGroup(IPlugBase *pPlug);
-	~IControlGroup();
+	~IControlGroup()
+	{
+		for (int i = 0; i < controlSubgroups.size(); i++)
+		{
+			delete controlSubgroups[i];
+		}
+	}
 
 	IControl* AddControl(IControl* pControl);
-	void AttachSubgroup(IControlGroup* pControlGroup);
-	
+	IControlGroup* CreateSubgroup();
+
+	void SetSuperGroup(IControlGroup* SuperGroup);
+	IControlGroup* GetSuperGroup();
+
 	DRECT GetGroupRECT();
 	void SetGroupRECT(DRECT GroupRECT);
 
@@ -22,9 +32,17 @@ public:
 	IControl* GetControl(int index);
 	IControl* GetControlIncludingSubgroups(int index);
 
-	void HideControls(bool hideSubgroups = false);
-	void ShowControls(bool showSubgroups = false);
+	void HideControls();
+	void HideControlsWithSubgroups();
+	void ShowControls();
+	void ShowControlsWithSubgroups();
 
+	void HideGroup();
+	void ShowGroup();
+	
+	bool IsGroupHidden();
+	bool IsGroupHiddenInSuperGroups();
+	
 	void MoveGroup(double x, double y);
 	void MoveGroupHorizontally(double x);
 	void MoveGroupVertically(double y);
@@ -56,6 +74,9 @@ public:
 	inline double MW() const;
 	inline double MH() const;
 
+	// Called automatically after HideGroup or ShowGroup
+	void UpdateVisibilityStatusOfAttachedControls();
+
 private:
 	void MoveSubgroupRelativeToGroup(IControlGroup* pControlGroup);
 	void MoveControlRelativeToGroup(IControl* pControl);
@@ -74,14 +95,20 @@ private:
 		IControl *control;
 		IRECT originalDrawRECT;
 		IRECT originalTargetRECT;
+		bool inGroupHidden;
 	};
 
 	IPlugBase *mPlug;
 	DRECT groupRECT = DRECT(999999, 999999, 0, 0);
-	WDL_PtrList<IControlGroup> controlSubgroups;
-	WDL_PtrList<IControlProperties> controlProps;
-	WDL_PtrList<DRECT> originalGroupRECTs;
+
+	std::vector<IControlGroup*> controlSubgroups;
+	std::vector<IControlProperties> controlProps;
+	std::vector<DRECT> originalGroupRECTs;
+
+	IControlGroup* superGroup = nullptr;
+
 	bool moveControlRelativeToGroup = false;
 	bool moveSubgroupRelativeToGroup = false;
+	bool groupHidden = false;
 };
 #endif
