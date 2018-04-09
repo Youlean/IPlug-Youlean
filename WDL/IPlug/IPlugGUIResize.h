@@ -347,7 +347,7 @@ private:
 	IRECT gui_resize_area;
 	WDL_String settings_ini_path;
 	resizeOneSide one_side_flag;
-	WDL_PtrList<IParam> guiResizeParameters;
+	vector<IParam> guiResizeParameters;
 
 	bool attachedToIPlugBase = false;
 

@@ -162,27 +162,27 @@ IPlugGUIResize::IPlugGUIResize(IPlugBase* pPlug, IGraphics* pGraphics, bool useH
 	}
 
 	// Initialize parameters
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(0)->InitInt("", -1, -1, 1000000);
-	guiResizeParameters.Get(0)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(1)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(1)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(2)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(2)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(3)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(3)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(4)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(4)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(5)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(5)->SetCanAutomate(false);
-	guiResizeParameters.Add(new IParam);
-	guiResizeParameters.Get(6)->InitDouble("", -1.0, -1.0, 1000000, 1.0);
-	guiResizeParameters.Get(6)->SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[0].InitInt("", -1, -1, 1000000);
+	guiResizeParameters[0].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[1].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[1].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[2].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[2].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[3].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[3].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[4].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[4].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[5].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[5].SetCanAutomate(false);
+	guiResizeParameters.push_back(IParam());
+	guiResizeParameters[6].InitDouble("", -1.0, -1.0, 1000000, 1.0);
+	guiResizeParameters[6].SetCanAutomate(false);
 }
 
 bool IPlugGUIResize::Draw(IGraphics * pGraphics)
@@ -1442,26 +1442,26 @@ void IPlugGUIResize::ResizeAtGUIOpen()
 
 	if (!presets_loaded)
 	{
-		if (guiResizeParameters.Get(0)->Value() > -0.5)
-			current_view_mode = IPMIN((int)guiResizeParameters.Get(0)->Value(), (int)view_container.view_mode.size());
+		if (guiResizeParameters[0].Value() > -0.5)
+			current_view_mode = IPMIN((int)guiResizeParameters[0].Value(), (int)view_container.view_mode.size());
 
-		if (guiResizeParameters.Get(1)->Value() > -0.5)
-			window_width_normalized = guiResizeParameters.Get(1)->Value();
+		if (guiResizeParameters[1].Value() > -0.5)
+			window_width_normalized = guiResizeParameters[1].Value();
 
-		if (guiResizeParameters.Get(2)->Value() > -0.5)
-			window_height_normalized = guiResizeParameters.Get(2)->Value();
+		if (guiResizeParameters[2].Value() > -0.5)
+			window_height_normalized = guiResizeParameters[2].Value();
 
-		if (guiResizeParameters.Get(3)->Value() > -0.5)
-			view_container.min_window_width_normalized[current_view_mode] = guiResizeParameters.Get(3)->Value();
+		if (guiResizeParameters[3].Value() > -0.5)
+			view_container.min_window_width_normalized[current_view_mode] = guiResizeParameters[3].Value();
 
-		if (guiResizeParameters.Get(4)->Value() > -0.5)
-			view_container.max_window_width_normalized[current_view_mode] = guiResizeParameters.Get(4)->Value();
+		if (guiResizeParameters[4].Value() > -0.5)
+			view_container.max_window_width_normalized[current_view_mode] = guiResizeParameters[4].Value();
 
-		if (guiResizeParameters.Get(5)->Value() > -0.5)
-			view_container.min_window_height_normalized[current_view_mode] = guiResizeParameters.Get(5)->Value();
+		if (guiResizeParameters[5].Value() > -0.5)
+			view_container.min_window_height_normalized[current_view_mode] = guiResizeParameters[5].Value();
 
-		if (guiResizeParameters.Get(6)->Value() > -0.5)
-			view_container.max_window_height_normalized[current_view_mode] = guiResizeParameters.Get(6)->Value();
+		if (guiResizeParameters[6].Value() > -0.5)
+			view_container.max_window_height_normalized[current_view_mode] = guiResizeParameters[6].Value();
 
 		presets_loaded = true;
 	}
@@ -1521,16 +1521,18 @@ void IPlugGUIResize::ResizeGraphics()
 	mGraphics->guiScaleRatio = gui_scale_ratio;
 
 	// Set parameters
-	guiResizeParameters.Get(0)->Set(current_view_mode);
-	guiResizeParameters.Get(1)->Set(window_width_normalized);
-	guiResizeParameters.Get(2)->Set(window_height_normalized);
-	guiResizeParameters.Get(3)->Set(view_container.min_window_width_normalized[current_view_mode]);
-	guiResizeParameters.Get(4)->Set(view_container.max_window_width_normalized[current_view_mode]);
-	guiResizeParameters.Get(5)->Set(view_container.min_window_height_normalized[current_view_mode]);
-	guiResizeParameters.Get(6)->Set(view_container.max_window_height_normalized[current_view_mode]);
+	guiResizeParameters[0].Set(current_view_mode);
+	guiResizeParameters[1].Set(window_width_normalized);
+	guiResizeParameters[2].Set(window_height_normalized);
+	guiResizeParameters[3].Set(view_container.min_window_width_normalized[current_view_mode]);
+	guiResizeParameters[4].Set(view_container.max_window_width_normalized[current_view_mode]);
+	guiResizeParameters[5].Set(view_container.min_window_height_normalized[current_view_mode]);
+	guiResizeParameters[6].Set(view_container.max_window_height_normalized[current_view_mode]);
 
 	plugin_width = (int)(window_width_normalized * gui_scale_ratio);
 	plugin_height = (int)(window_height_normalized * gui_scale_ratio);
+
+	//if (mGraphics->Width() == plugin_width && mGraphics->Height() == plugin_height) return;
 
 	RearrangeLayers();
 	MoveHandle();
@@ -1575,12 +1577,12 @@ void IPlugGUIResize::ResizeGraphics()
 
 IParam * IPlugGUIResize::GetGUIResizeParameter(int index)
 {
-	return guiResizeParameters.Get(index);
+	return &guiResizeParameters[index];
 }
 
 int IPlugGUIResize::GetGUIResizeParameterSize()
 {
-	return guiResizeParameters.GetSize();
+	return guiResizeParameters.size();
 }
 
 void IPlugGUIResize::MoveHandle()
