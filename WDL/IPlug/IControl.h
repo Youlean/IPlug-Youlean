@@ -5,6 +5,7 @@
 #include "IPlugBase.h"
 #include "IGraphics.h"
 #include <string>
+#include <vector>
 
 // A control is anything on the GUI, it could be a static bitmap, or
 // something that moves or changes.  The control could manipulate
@@ -59,6 +60,11 @@ public:
   bool MouseDblAsSingleClick() { return mDblAsSingleClick; }
 
   virtual bool Draw(IGraphics* pGraphics) = 0;
+
+  // IControlGroup helperFunctions
+  void AttachIControlGroup(IControlGroup* group);
+  bool IsAttachedToGroup();
+  bool IsHiddenInsideAttachedGroups();
 
   // This is used for GUI resize ----------------------------------------------------------------------------------------
   virtual void AfterGUIResize(double guiScaleRatio) {}
@@ -211,6 +217,7 @@ protected:
 private:
   bool textEntryRestrictChars = false;
   std::string textEntryCharLimits = "";
+  std::vector<IControlGroup*> attachedIControlGroup;
 };
 
 enum EDirection { kVertical, kHorizontal };

@@ -105,6 +105,38 @@ void IControl::OnMouseDblClick(int x, int y, IMouseMod* pMod)
   #endif
 }
 
+void IControl::AttachIControlGroup(IControlGroup * group)
+{
+	attachedIControlGroup.push_back(group);
+}
+
+bool IControl::IsAttachedToGroup()
+{
+	if (attachedIControlGroup.size() > 0) return true;
+
+	return false;
+}
+
+bool IControl::IsHiddenInsideAttachedGroups()
+{
+	for (int i = 0; i < attachedIControlGroup.size(); i++)
+	{
+		IControlGroup * group = attachedIControlGroup[i];
+
+		bool isHidden = attachedIControlGroup[i]->IsGroupHidden();
+
+		while (!isHidden && group->GetSuperGroup())
+		{
+			group = group->GetSuperGroup();
+			isHidden = group->IsGroupHidden();
+		}
+
+		if (!isHidden) return false;
+	}
+
+	return true;
+}
+
 #define PARAM_EDIT_W 40
 #define PARAM_EDIT_H 16
 
