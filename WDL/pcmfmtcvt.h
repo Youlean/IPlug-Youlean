@@ -24,7 +24,7 @@
 
   This file provides some simple functions for dealing with PCM audio.
   Specifically: 
-    + convert between 16/24/32 bit integer samples and flaots (only really tested on little-endian (i.e. x86) systems)
+    + convert between 8/16/24/32 bit integer samples and floats (only really tested on little-endian (i.e. x86) systems)
     + mix (and optionally resample, using low quality linear interpolation) a block of floats to another.
  
 */
@@ -46,6 +46,19 @@ static inline int float2int(PCMFMTCVT_DBL_TYPE d)
   //  __asm__ __volatile__ ("fistpl %0" : "=m" (tmp) : "t" (d) : "st") ;
   //  return tmp;
 }
+
+
+#define float_TO_UINT8(out,in) \
+		if ((in)<0.0) { if ((in) <= -1.0) (out) = 0; else (out) = (unsigned char) (float2int(((in) * 128.0)-0.5) + 128); } \
+		else { if ((in) >= (126.5f/128.0f)) (out) = 255; else (out) = (unsigned char) (float2int((in) * 128.0 + 0.5) + 128); }
+
+#define UINT8_TO_float(out,in) { (out) = (float)(((double)in)/128.0 - 1.0);  }
+
+#define double_TO_UINT8(out,in) \
+		if ((in)<0.0) { if ((in) <= -1.0) (out) = 0; else (out) = (unsigned char) (float2int(((in) * 128.0)-0.5) + 128); } \
+		else { if ((in) >= (126.5/128.0)) (out) = 255; else (out) = (unsigned char) (float2int((in) * 128.0 + 0.5) + 128); }
+
+#define UINT8_TO_double(out,in) { (out) = (((PCMFMTCVT_DBL_TYPE)in)/128.0 - 1.0); }
 
 
 #define float_TO_INT16(out,in) \
@@ -242,6 +255,16 @@ static void pcmToFloats(void *src, int items, int bps, int src_spacing, float *d
       dest+=dest_spacing;
     }
   }
+  else if (bps == 8)
+  {
+    unsigned char *i1=(unsigned char *)src;
+    while (items--)
+    {
+      UINT8_TO_float(*dest,*i1);
+      i1+=src_spacing;
+      dest+=dest_spacing;
+    }
+  }
 }
 
 static void floatsToPcm(float *src, int src_spacing, int items, void *dest, int bps, int dest_spacing)
@@ -273,6 +296,16 @@ static void floatsToPcm(float *src, int src_spacing, int items, void *dest, int 
     while (items--)
     {
       float_TO_INT16(*o1,*src);
+      src+=src_spacing;
+      o1+=dest_spacing;
+    }
+  }
+  else if (bps == 8)
+  {
+    unsigned char *o1=(unsigned char*)dest;
+    while (items--)
+    {
+      float_TO_UINT8(*o1,*src);
       src+=src_spacing;
       o1+=dest_spacing;
     }
@@ -313,6 +346,16 @@ static void pcmToDoubles(void *src, int items, int bps, int src_spacing, PCMFMTC
       dest+=dest_spacing;
     }
   }
+  else if (bps == 8)
+  {
+    unsigned char *i1=(unsigned char *)src;
+    while (items--)
+    {
+      UINT8_TO_double(*dest,*i1);
+      i1+=src_spacing;
+      dest+=dest_spacing;
+    }
+  }
 }
 
 static void doublesToPcm(PCMFMTCVT_DBL_TYPE *src, int src_spacing, int items, void *dest, int bps, int dest_spacing, int byteadvancefor24=0)
@@ -344,6 +387,16 @@ static void doublesToPcm(PCMFMTCVT_DBL_TYPE *src, int src_spacing, int items, vo
     while (items--)
     {
       double_TO_INT16(*o1,*src);
+      src+=src_spacing;
+      o1+=dest_spacing;
+    }
+  }
+  else if (bps == 8)
+  {
+    unsigned char *o1=(unsigned char*)dest;
+    while (items--)
+    {
+      float_TO_UINT8(*o1,*src);
       src+=src_spacing;
       o1+=dest_spacing;
     }
