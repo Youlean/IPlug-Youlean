@@ -324,9 +324,7 @@ public:
 	  int size;
 	  startPos = Get(&size, startPos);
 	  int sizeBytes = size * sizeof(T::value_type);
-
-	  int bs = mBytes.GetSize();
-	  
+	  	  
 	  if (size > 0 && startPos >= 0)
 	  {
 		  data->resize(size);
@@ -444,6 +442,11 @@ public:
       memset(mBytes.Get() + n, 0, (newSize - n));
     }
     return n;
+  }
+
+  void ResizeBytes(int newSize)
+  {
+	  mBytes.Resize(newSize);
   }
 
   inline BYTE* GetBytes()
