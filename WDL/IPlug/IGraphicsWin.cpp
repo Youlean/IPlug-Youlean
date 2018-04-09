@@ -4,6 +4,7 @@
 #include <wininet.h>
 #include <Shlobj.h>
 #include <commctrl.h>
+#include <Dbghelp.h>
 
 #ifdef RTAS_API
   #include "PlugInUtils.h"
@@ -47,11 +48,61 @@ inline IMouseMod GetMouseMod(WPARAM wParam)
                    );
 }
 
+void make_minidump(EXCEPTION_POINTERS* e)
+{
+	auto hDbgHelp = LoadLibraryA("dbghelp");
+	if (hDbgHelp == nullptr)
+		return;
+	auto pMiniDumpWriteDump = (decltype(&MiniDumpWriteDump))GetProcAddress(hDbgHelp, "MiniDumpWriteDump");
+	if (pMiniDumpWriteDump == nullptr)
+		return;
+
+	char name[MAX_PATH];
+	{
+		auto nameEnd = name + GetModuleFileNameA(GetModuleHandleA(0), name, MAX_PATH);
+		SYSTEMTIME t;
+		GetSystemTime(&t);
+		wsprintfA(nameEnd - strlen(".exe"),
+			"_%4d%02d%02d_%02d%02d%02d.dmp",
+			t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+	}
+
+	auto hFile = CreateFileA(name, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+	if (hFile == INVALID_HANDLE_VALUE)
+		return;
+
+	MINIDUMP_EXCEPTION_INFORMATION exceptionInfo;
+	exceptionInfo.ThreadId = GetCurrentThreadId();
+	exceptionInfo.ExceptionPointers = e;
+	exceptionInfo.ClientPointers = FALSE;
+
+	auto dumped = pMiniDumpWriteDump(
+		GetCurrentProcess(),
+		GetCurrentProcessId(),
+		hFile,
+		MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory | MiniDumpScanMemory),
+		e ? &exceptionInfo : nullptr,
+		nullptr,
+		nullptr);
+
+	CloseHandle(hFile);
+
+	return;
+}
+
+LONG CALLBACK unhandled_handler(EXCEPTION_POINTERS* e)
+{
+	make_minidump(e);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 // static
 LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
   if (msg == WM_CREATE)
   {
+	SetUnhandledExceptionFilter(unhandled_handler);
+
     LPCREATESTRUCT lpcs = (LPCREATESTRUCT) lParam;
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LPARAM) (lpcs->lpCreateParams));
     int mSec = int(1000.0 / sFPS);
@@ -84,7 +135,6 @@ LRESULT CALLBACK IGraphicsWin::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARA
     {
       if (wParam == IPLUG_TIMER_ID)
       {
-
         if (pGraphics->mParamEditWnd && pGraphics->mParamEditMsg != kNone)
         {
           switch (pGraphics->mParamEditMsg)
