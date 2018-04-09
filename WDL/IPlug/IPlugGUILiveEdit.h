@@ -601,6 +601,19 @@ public:
 		mGraphics = pGraphics;
 		mGraphics->HandleMouseOver(true);
 
+		IText textStyle(14, &COLOR_WHITE);
+
+		IRECT warningRECT = IRECT();
+		warningRECT.B = 20;
+		warningRECT.R = 100;
+
+		// Draw text background
+		//mGraphics->FillIRect(&COLOR_BLACK, &warningRECT);
+
+		// Draw Text
+		mGraphics->DrawIText(&textStyle, "live resizing", &warningRECT);
+
+
 		ResizeDrawRectToWindowSize();
 
 		// If edit mode is disabled.
