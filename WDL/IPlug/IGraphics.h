@@ -128,6 +128,7 @@ public:
 	// If there are overlapping controls, fast drawing can generate multiple Draw() calls per cycle
 	// (a control may be asked to draw multiple parts of itself, if it intersects with something dirty.)
 	void SetStrictDrawing(bool strict);
+	bool IsUsingStrictDrawing() { return mStrict; }
 
 	virtual void* OpenWindow(void* pParentWnd) = 0;
 	virtual void* OpenWindow(void* pParentWnd, void* pParentControl, short leftOffset = 0, short topOffset = 0) { return 0; } // For Carbon / RTAS... mega ugh!
@@ -188,6 +189,11 @@ public:
 	void StartDrawingFromControlIndex(int controlIndex)
 	{
 		startDrawingFromIndex = controlIndex;
+	}
+
+	int GetDrawingFromControlIndex()
+	{
+		return startDrawingFromIndex;
 	}
 
 	void MoveControlLayers(int fromIndex, int toIndex);
